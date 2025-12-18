@@ -25,7 +25,8 @@ public class OAuth2LoginSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form-> form.disable())
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/", "/index.html", "/room.html", "/login/google","/favicon.ico", "/js/**", "/css/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/room.html", "/login/google","/favicon.ico", "/js/**", "/css/**","/v3/api-docs/**",
+                                "/swagger-ui/**","/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))

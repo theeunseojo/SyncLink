@@ -3,111 +3,691 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>언제비어 - 시작하기</title>
+    <title>언제비어 - 친구들과 딱 맞는 시간 찾기</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        .google-btn { background-color: #dd4b39; color: white; border: none; }
-        .google-btn:hover { background-color: #c23321; color: white; }
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary-color: #f59e0b;
+            --success-color: #10b981;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+            --shadow-xl: 0 16px 48px rgba(0,0,0,0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #1f2937;
+        }
+
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 배경 애니메이션 */
+        .bg-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .bg-animation::before,
+        .bg-animation::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-animation::before {
+            width: 500px;
+            height: 500px;
+            top: -250px;
+            right: -250px;
+            animation-delay: 0s;
+        }
+
+        .bg-animation::after {
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            left: -200px;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            50% {
+                transform: translate(50px, 50px) scale(1.1);
+            }
+        }
+
+        .content-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: var(--shadow-xl);
+            width: 100%;
+            max-width: 520px;
+            padding: 3rem 2.5rem;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo-icon {
+            font-size: 4rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .logo-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .section-divider {
+            margin: 2rem 0;
+            display: flex;
+            align-items: center;
+            text-align: center;
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .section-divider span {
+            padding: 0 1rem;
+            color: #9ca3af;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .google-btn {
+            background: white;
+            color: #4285f4;
+            border: 2px solid #e5e7eb;
+            padding: 0.875rem 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .google-btn:hover {
+            background: #f8fafc;
+            border-color: #4285f4;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            color: #4285f4;
+        }
+
+        .google-btn:active {
+            transform: translateY(0);
+        }
+
+        .google-btn i {
+            font-size: 1.25rem;
+        }
+
+        .login-hint {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title i {
+            font-size: 1.5rem;
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            outline: none;
+        }
+
+        .form-check {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.875rem;
+        }
+
+        .form-check:hover {
+            border-color: var(--primary-light);
+            background: #f3f4f6;
+        }
+
+        .form-check-input {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-top: 0.125rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-right: 0;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .form-check-label {
+            cursor: pointer;
+            color: #374151;
+            font-weight: 500;
+            line-height: 1.6;
+            flex: 1;
+            margin: 0;
+            padding: 0;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            border: none;
+            padding: 1rem 2rem;
+            font-weight: 700;
+            font-size: 1.125rem;
+            border-radius: 12px;
+            color: white;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-primary.loading .loading-spinner {
+            display: inline-block;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: white !important;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+            padding: 1.25rem 1.75rem;
+            margin-bottom: 1rem;
+            animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border-left: 4px solid var(--success-color);
+            min-width: 320px;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            pointer-events: auto;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            box-sizing: border-box;
+        }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+        }
+
+        .toast.progress::before {
+            animation: toastProgress 3.5s linear;
+        }
+
+        @keyframes toastProgress {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(120%) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast-title {
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .toast-message {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 576px) {
+            .content-card {
+                padding: 2rem 1.5rem;
+                border-radius: 20px;
+            }
+
+            .logo-title {
+                font-size: 2rem;
+            }
+
+            .logo-icon {
+                font-size: 3rem;
+            }
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
+<div class="main-container">
+    <div class="bg-animation"></div>
 
-<div class="container d-flex flex-column justify-content-center align-items-center vh-100">
-    <div class="card shadow p-4" style="width: 100%; max-width: 450px;">
-        <h1 class="text-center mb-2">🍻 언제비어</h1>
-        <p class="text-center text-muted mb-4">친구들과 딱 맞는 시간을 3초 만에 찾으세요.</p>
-
-        <div id="login-section" class="d-grid gap-2 mb-4">
-            <a href="/oauth2/authorization/google" class="btn google-btn py-2">
-                <i class="bi bi-google"></i> 구글 로그인하고 내 일정 불러오기
-            </a>
-            <small class="text-center text-secondary">* 일정을 불러오려면 로그인이 필요해요</small>
+    <div class="content-card">
+        <div class="logo-section">
+            <div class="logo-icon">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <h1 class="logo-title">언제비어</h1>
+            <p class="logo-subtitle">
+                친구들과 딱 맞는 시간을<br>
+                <strong>3초 만에</strong> 찾으세요
+            </p>
         </div>
 
-        <hr>
+        <div id="login-section">
+            <a href="/oauth2/authorization/google" class="btn google-btn">
+                <i class="bi bi-google"></i>
+                <span>구글 로그인하고 내 일정 불러오기</span>
+            </a>
+            <div class="login-hint">
+                <i class="bi bi-info-circle"></i>
+                <span>일정을 불러오려면 로그인이 필요해요</span>
+            </div>
+        </div>
+
+        <div class="section-divider">
+            <span>또는</span>
+        </div>
 
         <div id="create-room-section">
-            <h5 class="fw-bold mb-3">🚀 방 만들기</h5>
+            <h5 class="section-title">
+                <i class="bi bi-rocket-takeoff"></i>
+                방 만들기
+            </h5>
 
             <div class="mb-3">
-                <label class="form-label text-secondary small">모임 이름</label>
-                <input type="text" id="title" class="form-control" placeholder="예: 캡스톤 회의, 종강 파티">
+                <label class="form-label">
+                    <i class="bi bi-chat-dots"></i> 모임 이름
+                </label>
+                <input
+                        type="text"
+                        id="title"
+                        class="form-control"
+                        placeholder="예: 캡스톤 회의, 종강 파티"
+                        autocomplete="off"
+                >
             </div>
 
             <div class="row mb-3">
-                <div class="col-6">
-                    <label class="form-label text-secondary small">시작일 (언제부터)</label>
-                    <input type="datetime-local" id="startDateTime" class="form-control">
+                <div class="col-12 col-md-6 mb-3 mb-md-0">
+                    <label class="form-label">
+                        <i class="bi bi-calendar-event"></i> 시작일
+                    </label>
+                    <input
+                            type="datetime-local"
+                            id="startDateTime"
+                            class="form-control"
+                    >
                 </div>
-                <div class="col-6">
-                    <label class="form-label text-secondary small">종료일 (언제까지)</label>
-                    <input type="datetime-local" id="endDateTime" class="form-control">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">
+                        <i class="bi bi-calendar-x"></i> 종료일
+                    </label>
+                    <input
+                            type="datetime-local"
+                            id="endDateTime"
+                            class="form-control"
+                    >
                 </div>
             </div>
 
-            <div class="form-check mb-4">
-                <input class="form-check-input" type="checkbox" id="dateOnlyMode">
+            <div class="form-check">
+                <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="dateOnlyMode"
+                >
                 <label class="form-check-label" for="dateOnlyMode">
-                    시간 상관없이 <strong>날짜로만</strong> 추천받을래요 (여행 등)
+                    시간 상관없이 <strong>날짜로만</strong> 추천받을래요
+                    <span class="text-muted">(여행 등)</span>
                 </label>
             </div>
 
-            <button onclick="createRoom()" class="btn btn-primary w-100 py-2 fw-bold">방 생성하고 링크 복사하기</button>
+            <button
+                    onclick="createRoom()"
+                    class="btn btn-primary"
+                    id="createBtn"
+            >
+                <span class="loading-spinner"></span>
+                <span>방 생성하고 링크 복사하기</span>
+            </button>
         </div>
     </div>
 </div>
 
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // 페이지 로드 시 로그인 체크 및 캘린더 동기화
-    document.addEventListener('DOMContentLoaded', async function() {
-        try {
-            // (참고) /api/events 엔드포인트가 컨트롤러에 있어야 함
-            const response = await fetch('/api/events', { method: 'POST' });
-            if (response.ok) {
-                console.log("캘린더 동기화 완료");
-            }
-        } catch (e) {
-            console.error("동기화 패스 (비로그인 상태 등)");
-        }
-    });
-
-    async function createRoom() {
-        const title = document.getElementById('title').value;
-        const start = document.getElementById('startDateTime').value;
-        const end = document.getElementById('endDateTime').value;
-        // const isDateOnly = document.getElementById('dateOnlyMode').checked;
-
-        if(!title || !start || !end ) {
-            alert("모든 정보를 입력해주세요!");
+    // 토스트 알림 함수
+    function showToast(message, type = 'success', duration = 3000) {
+        console.log('showToast 호출됨:', message, type, duration);
+        const container = document.getElementById('toastContainer');
+        if (!container) {
+            console.error('토스트 컨테이너를 찾을 수 없습니다!');
             return;
         }
 
-        const data = {
-            title: title,
-            startDateTime: start,
-            endDateTime: end,
-            // dateOnly: isDateOnly // 백엔드 DTO에 필드가 있다면 주석 해제
-        };
+        const toast = document.createElement('div');
+        toast.className = `toast ${type} progress`;
+        toast.innerHTML = `
+            <div class="toast-title">${type === 'success' ? '✅ 성공' : '❌ 오류'}</div>
+            <div class="toast-message">${message}</div>
+        `;
+        container.appendChild(toast);
+        console.log('토스트 추가됨:', toast);
 
-        try {
-            const response = await fetch('/api/rooms', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+        setTimeout(() => {
+            toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
 
-            if (response.ok) {
-                const uuid = await response.text();
-                // 방 생성 후 바로 결과 페이지로
-                window.location.href = `/room.html?uuid=${uuid}`;
-            } else {
-                alert("방 생성에 실패했습니다.");
-            }
-        } catch (e) {
-            console.error(e);
-            alert("서버 통신 에러");
+// 페이지 로드 시 로그인 체크 및 캘린더 동기화
+document.addEventListener('DOMContentLoaded', async function() {
+    // 로그인 성공 알림 체크
+    const urlParams = new URLSearchParams(window.location.search);
+    console.log('현재 URL:', window.location.href);
+    console.log('URL 파라미터:', urlParams.toString());
+    console.log('login 파라미터 값:', urlParams.get('login'));
+
+    if (urlParams.get('login') === 'success') {
+        console.log('로그인 성공 감지됨 - 토스트 표시 예정');
+
+        // URL에서 login 파라미터 먼저 제거 (히스토리 정리)
+        urlParams.delete('login');
+        const newUrl = window.location.pathname +
+            (urlParams.toString() ? '?' + urlParams.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+
+        // 페이지 로딩 완료 후 눈에 띄게 토스트 표시 (1초 후)
+        setTimeout(() => {
+            console.log('토스트 표시 시도');
+            showToast('구글 로그인이 완료되었습니다! 🎉', 'success', 3500);
+        }, 1000);
+    } else {
+        console.log('로그인 성공 파라미터 없음');
+    }
+
+    try {
+        const response = await fetch('/api/events', { method: 'POST' });
+        if (response.ok) {
+            console.log("캘린더 동기화 완료");
+        }
+    } catch (e) {
+        console.error("동기화 패스 (비로그인 상태 등)");
+    }
+});
+
+async function createRoom() {
+        const title = document.getElementById('title').value.trim();
+    const start = document.getElementById('startDateTime').value;
+    const end = document.getElementById('endDateTime').value;
+        const createBtn = document.getElementById('createBtn');
+        const loadingSpinner = createBtn.querySelector('.loading-spinner').parentElement;
+
+        // 유효성 검사
+        if (!title || !start || !end) {
+            showToast('모든 정보를 입력해주세요!', 'error');
+            return;
+        }
+
+        if (new Date(start) >= new Date(end)) {
+            showToast('종료일은 시작일보다 뒤여야 합니다!', 'error');
+        return;
+    }
+
+        // 로딩 상태
+        createBtn.disabled = true;
+        createBtn.classList.add('loading');
+
+    const data = {
+        title: title,
+        startDateTime: start,
+            endDateTime: end
+    };
+
+    try {
+        const response = await fetch('/api/rooms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const uuid = await response.text();
+                showToast('방이 생성되었습니다!', 'success');
+                // 약간의 딜레이 후 이동 (토스트 확인 시간)
+                setTimeout(() => {
+            window.location.href = `/room.html?uuid=${uuid}`;
+                }, 500);
+        } else {
+                const errorText = await response.text();
+                showToast(errorText || '방 생성에 실패했습니다.', 'error');
+                createBtn.disabled = false;
+                createBtn.classList.remove('loading');
+        }
+    } catch (e) {
+        console.error(e);
+            showToast('서버 통신 중 오류가 발생했습니다.', 'error');
+            createBtn.disabled = false;
+            createBtn.classList.remove('loading');
         }
     }
+
+    // Enter 키로 방 생성
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !document.getElementById('createBtn').disabled) {
+            createRoom();
+}
+    });
 </script>
 </body>
 </html>

@@ -3,100 +3,767 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>모임 시간 조율</title>
+    <title>모임 시간 조율 - 언제비어</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <style>
-        #calendar {
-            max-width: 900px;
-            margin: 0 auto;
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #1f2937;
+            padding-bottom: 3rem;
+        }
+
+        .header-section {
             background: white;
-            padding: 15px;
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 900;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .page-title i {
+            font-size: 2rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            border-radius: 10px;
+            padding: 0.625rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-login {
+            background: var(--gradient-2);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            color: white;
+        }
+
+        .btn-link-copy {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-light);
+        }
+
+        .btn-link-copy:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .member-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .member-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .member-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .member-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .member-badge {
+            background: var(--gradient-3);
+            color: white;
+            padding: 0.625rem 1.25rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .member-empty {
+            color: #9ca3af;
+            font-style: italic;
+            padding: 0.5rem 0;
+        }
+
+        .tab-container {
+            background: white;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 2px solid #e5e7eb;
+            color: #6b7280;
+            padding: 0.75rem 1.5rem;
             border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary-light);
+            color: var(--primary-color);
+            background: #f9fafb;
+        }
+
+        .tab-btn.active {
+            background: var(--gradient-1);
+            border-color: transparent;
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .result-controls {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .result-controls.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .view-toggle {
+            display: inline-flex;
+            background: white;
+            border-radius: 12px;
+            padding: 0.25rem;
+            box-shadow: var(--shadow-sm);
+            gap: 0.25rem;
+        }
+
+        .view-toggle-btn {
+            background: transparent;
+            border: none;
+            color: #6b7280;
+            padding: 0.625rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .view-toggle-btn:hover {
+            background: #f3f4f6;
+            color: var(--primary-color);
+        }
+
+        .view-toggle-btn.active {
+            background: var(--gradient-1);
+            color: white;
+        }
+
+        #calendar {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
             min-height: 600px;
         }
 
-        /* 1. 결과: 가능한 시간 (초록색) */
+        /* FullCalendar 커스터마이징 - 더 부드럽고 모던한 디자인 */
+        .fc {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .fc-header-toolbar {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .fc-toolbar-title {
+            font-weight: 800 !important;
+            font-size: 1.5rem !important;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .fc-button {
+            background: var(--primary-color) !important;
+            border: none !important;
+            padding: 0.625rem 1.25rem !important;
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+            font-size: 0.875rem !important;
+        }
+
+        .fc-button:hover {
+            background: var(--primary-dark) !important;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md) !important;
+        }
+
+        .fc-button:active {
+            transform: translateY(0) !important;
+        }
+
+        .fc-button-primary:not(:disabled):active,
+        .fc-button-primary:not(:disabled).fc-button-active {
+            background: var(--primary-dark) !important;
+            box-shadow: var(--shadow-sm) !important;
+        }
+
+        .fc-today-button {
+            background: var(--gradient-2) !important;
+        }
+
+        /* 타임 슬롯 스타일링 */
+        .fc-timegrid-slot {
+            height: 2.5rem !important;
+            border-color: #f3f4f6 !important;
+        }
+
+        .fc-timegrid-slot-minor {
+            border-color: #f9fafb !important;
+        }
+
+        .fc-timegrid-col {
+            border-left: 1px solid #e5e7eb !important;
+        }
+
+        .fc-col-header-cell {
+            background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%) !important;
+            border-color: #e5e7eb !important;
+            padding: 1rem !important;
+        }
+
+        .fc-col-header-cell-cushion {
+            font-weight: 700 !important;
+            color: #374151 !important;
+            font-size: 0.9375rem !important;
+        }
+
+        .fc-day-today {
+            background: rgba(99, 102, 241, 0.05) !important;
+        }
+
+        /* 이벤트 스타일링 - 겹침 방지 및 더 부드러운 디자인 */
+        .fc-event {
+            border-radius: 8px !important;
+            padding: 0.5rem 0.75rem !important;
+            border: none !important;
+            cursor: pointer !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            margin: 2px 4px !important;
+            font-weight: 500 !important;
+            font-size: 0.875rem !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            border-left: 3px solid transparent !important;
+        }
+
+        .fc-event:hover {
+            transform: translateX(4px) !important;
+            box-shadow: var(--shadow-md) !important;
+            z-index: 10 !important;
+        }
+
+        .fc-event-main {
+            padding: 0 !important;
+        }
+
+        .fc-event-time {
+            font-weight: 600 !important;
+            margin-right: 0.5rem !important;
+        }
+
+        .fc-event-title {
+            font-weight: 500 !important;
+        }
+
+        /* 가능한 시간 하이라이트 - 더 명확하고 부드럽게 */
         .free-time-highlight {
-            background-color: #28a745 !important;
-            opacity: 0.6;
-            border: none;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.2) 100%) !important;
+            color: #065f46 !important;
+            border: 2px solid #10b981 !important;
+            border-left: 4px solid #10b981 !important;
+            font-weight: 600 !important;
+            opacity: 1 !important;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2) !important;
         }
 
-        /* 2. 편집: 무시된 내 일정 (회색 + 취소선) */
+        .free-time-highlight:hover {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.3) 100%) !important;
+            border-color: #059669 !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+        }
+
+        .free-time-highlight::before {
+            content: '✓ ';
+            font-weight: 900;
+            color: #10b981;
+        }
+
+        /* 무시된 이벤트 - 더 명확한 구분 */
         .ignored-event {
-            background-color: #d6d8db !important;
-            border-color: #c6c8cb !important;
-            text-decoration: line-through;
-            opacity: 0.7;
-            color: #6c757d !important;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+            color: #9ca3af !important;
+            text-decoration: line-through !important;
+            opacity: 0.7 !important;
+            border-left: 3px solid #d1d5db !important;
+            box-shadow: none !important;
         }
 
-        /* 탭 버튼 스타일 */
-        .nav-pills .nav-link.active {
-            background-color: #343a40;
+        .ignored-event:hover {
+            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%) !important;
+            transform: translateX(2px) !important;
         }
-        .nav-pills .nav-link {
-            color: #343a40;
-            font-weight: bold;
+
+        .fc-daygrid-event {
+            border-radius: 8px !important;
+            margin: 2px 0 !important;
+        }
+
+        /* 일정이 많은 경우를 위한 스크롤 개선 */
+        .fc-scroller {
+            overflow-y: auto !important;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-light) #f3f4f6;
+        }
+
+        .fc-scroller::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .fc-scroller::-webkit-scrollbar-track {
+            background: #f9fafb;
+            border-radius: 4px;
+        }
+
+        .fc-scroller::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 4px;
+        }
+
+        .fc-scroller::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+        /* 캘린더 전체에 부드러운 전환 효과 */
+        .fc-view-harness {
+            transition: opacity 0.3s ease;
+        }
+
+        /* 월별 뷰 개선 */
+        .fc-daygrid-day-frame {
+            min-height: 80px;
+        }
+
+        .fc-daygrid-day {
+            transition: background-color 0.2s ease;
+        }
+
+        .fc-daygrid-day:hover {
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+
+        /* 이벤트가 추가될 때 부드러운 애니메이션 */
+        .fc-event {
+            animation: eventFadeIn 0.3s ease-out;
+        }
+
+        @keyframes eventFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 배경 이벤트 스타일 (날짜 모드용) */
+        .fc-daygrid-event.fc-event-mirror,
+        .fc-daygrid-event.fc-event-selected {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.25) 100%) !important;
+            border: 2px solid #10b981 !important;
+        }
+
+        /* 시간 표시 스타일 */
+        .fc-timegrid-axis {
+            color: #6b7280 !important;
+            font-weight: 600 !important;
+            font-size: 0.8125rem !important;
+        }
+
+        .fc-timegrid-axis-cushion {
+            padding-right: 1rem !important;
+        }
+
+        .help-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 12px;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .help-text i {
+            color: var(--primary-color);
+            margin-right: 0.5rem;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e5e7eb;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 99999;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: white !important;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+            padding: 1.25rem 1.75rem;
+            margin-bottom: 1rem;
+            animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border-left: 4px solid var(--success-color);
+            min-width: 320px;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            pointer-events: auto;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            box-sizing: border-box;
+        }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+        }
+
+        .toast.progress::before {
+            animation: toastProgress 3.5s linear;
+        }
+
+        @keyframes toastProgress {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(120%) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast-title {
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .toast-message {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .btn-action {
+                flex: 1;
+                justify-content: center;
+            }
+
+            #calendar {
+                padding: 1rem;
+            }
+
+            .tab-container {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+</div>
 
-<div class="container mt-4 mb-5">
-
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 id="roomTitle">📅 모임 시간 조율</h4>
-        <div>
-            <a id="loginBtn" href="#" class="btn btn-warning btn-sm me-2">🔔 구글 로그인/참여</a>
-            <button class="btn btn-outline-primary btn-sm" onclick="copyLink()">🔗 링크 복사</button>
-        </div>
-    </div>
-
-    <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body">
-            <h6 class="card-title fw-bold text-primary">👥 현재 참여 중인 멤버</h6>
-            <div id="member-list" class="d-flex flex-wrap gap-2">
-                <span class="text-muted small">불러오는 중...</span>
-            </div>
-        </div>
-    </div>
-
-    <ul class="nav nav-pills mb-3 justify-content-center" id="pills-tab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="tab-my-schedule" data-bs-toggle="pill" onclick="switchMode('edit')">
-                ✏️ 내 일정 수정 (제외하기)
+<div class="header-section">
+    <div class="header-content d-flex justify-content-between align-items-center flex-wrap">
+        <h4 class="page-title">
+            <i class="bi bi-calendar-check"></i>
+            <span id="roomTitle">모임 시간 조율</span>
+        </h4>
+        <div class="header-actions">
+            <a id="loginBtn" href="#" class="btn btn-action btn-login">
+                <i class="bi bi-bell"></i>
+                구글 로그인/참여
+            </a>
+            <button class="btn btn-action btn-link-copy" onclick="copyLink()">
+                <i class="bi bi-link-45deg"></i>
+                링크 복사
             </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-result" data-bs-toggle="pill" onclick="switchMode('result')">
-                ✨ 빈 시간 결과 보기
-            </button>
-        </li>
-    </ul>
-
-    <div id="result-controls" class="text-center mb-3" style="display: none;">
-        <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-success active" onclick="showResult('time')">시간으로 보기</button>
-            <button type="button" class="btn btn-outline-success" onclick="showResult('date')">날짜로만 보기</button>
         </div>
-    </div>
-
-    <div id='calendar' class="shadow-sm"></div>
-
-    <div class="text-center mt-3">
-        <p class="text-muted small">* '내 일정 수정' 탭에서 일정을 클릭하면 계산에서 제외(무시)됩니다.</p>
     </div>
 </div>
 
+<div class="main-content">
+    <div class="member-card">
+        <h6 class="member-title">
+            <i class="bi bi-people"></i>
+            현재 참여 중인 멤버
+        </h6>
+        <div id="member-list" class="member-list">
+            <span class="member-empty">불러오는 중...</span>
+        </div>
+    </div>
+
+    <div class="tab-container">
+        <button class="tab-btn active" id="tab-edit" onclick="switchMode('edit')">
+            <i class="bi bi-pencil-square"></i>
+            내 일정 수정 (제외하기)
+        </button>
+        <button class="tab-btn" id="tab-result" onclick="switchMode('result')">
+            <i class="bi bi-star"></i>
+            빈 시간 결과 보기
+        </button>
+    </div>
+
+    <div id="result-controls" class="result-controls">
+        <div class="view-toggle">
+            <button type="button" class="view-toggle-btn active" onclick="showResult('time')">
+                <i class="bi bi-clock"></i> 시간으로 보기
+            </button>
+            <button type="button" class="view-toggle-btn" onclick="showResult('date')">
+                <i class="bi bi-calendar3"></i> 날짜로만 보기
+            </button>
+        </div>
+    </div>
+
+    <div id='calendar'></div>
+
+    <div class="help-text">
+        <i class="bi bi-info-circle"></i>
+        '내 일정 수정' 탭에서 일정을 클릭하면 계산에서 제외(무시)됩니다.
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     let calendar;
     let currentUuid = new URLSearchParams(window.location.search).get('uuid');
     let currentMode = 'edit';
 
+
+
+    // 로딩 오버레이
+    function showLoading(show) {
+        const overlay = document.getElementById('loadingOverlay');
+        if (show) {
+            overlay.classList.add('show');
+        } else {
+            overlay.classList.remove('show');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        if (!currentUuid) { alert("잘못된 접근입니다."); return; }
+        if (!currentUuid) {
+            alert("잘못된 접근입니다.");
+            return;
+        }
+
+
 
         // 로그인 버튼 링크 설정
         const loginBtn = document.getElementById('loginBtn');
@@ -106,7 +773,7 @@
 
         const calendarEl = document.getElementById('calendar');
 
-        // 캘린더 초기화
+        // 캘린더 초기화 - 더 부드럽고 겹침 없는 설정
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridWeek',
             locale: 'ko',
@@ -117,26 +784,45 @@
             },
             height: 'auto',
             allDaySlot: true,
-            // 이벤트 클릭 시 (편집 모드일 때만 동작)
+            firstDay: 1, // 월요일 시작
+            slotMinTime: '06:00:00',
+            slotMaxTime: '24:00:00',
+            slotDuration: '00:30:00', // 30분 단위
+            slotLabelInterval: '01:00:00', // 1시간마다 라벨 표시
+            slotMinHeight: 60, // 최소 슬롯 높이 증가
+            expandRows: true, // 모든 행을 확장
+            eventOverlap: false, // 이벤트 겹침 방지
+            eventMaxStack: 1, // 한 타임슬롯에 최대 1개 이벤트만 표시
+            eventDisplay: 'block', // 블록 형태로 표시
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            },
+            dayHeaderFormat: { weekday: 'short', day: 'numeric' },
             eventClick: function(info) {
                 if (currentMode === 'edit') {
                     toggleIgnoreEvent(info.event);
                 } else {
-                    alert("결과 화면에서는 수정할 수 없습니다.");
+                    showToast('결과 화면에서는 수정할 수 없습니다. 일정 수정 탭으로 이동해주세요.', 'error');
+                }
+            },
+            eventDidMount: function(info) {
+                // 이벤트 마운트 시 추가 스타일 적용
+                if (info.event.classNames.includes('free-time-highlight')) {
+                    info.el.style.borderLeft = '4px solid #10b981';
                 }
             }
         });
 
         calendar.render();
 
-        // 처음엔 내 일정 로딩
+        // 초기 데이터 로딩
         loadMyEvents();
         loadMembers();
     });
 
-    // ----------------------------------------------------
-    // [NEW] 멤버 목록 불러오기
-    // ----------------------------------------------------
+    // 멤버 목록 불러오기
     async function loadMembers() {
         try {
             const response = await fetch(`/api/rooms/${currentUuid}/members`);
@@ -145,163 +831,202 @@
                 const listEl = document.getElementById('member-list');
 
                 if (members.length === 0) {
-                    listEl.innerHTML = '<span class="text-muted small">아직 아무도 안 왔어요!</span>';
+                    listEl.innerHTML = '<span class="member-empty">아직 아무도 참여하지 않았어요! 👋</span>';
                     return;
                 }
 
-                // 멤버 이름표(뱃지) 만들기
                 listEl.innerHTML = members.map(name =>
-                    `<span class="badge bg-info text-dark border p-2">😊 ${name}</span>`
+                    `<div class="member-badge">
+                        <i class="bi bi-person-circle"></i>
+                        ${name}
+                    </div>`
                 ).join('');
-
-                // (선택사항) 몇 명인지 제목 옆에 표시해도 좋음
-                // document.getElementById('roomTitle').innerText += ` (${members.length}명)`;
             }
         } catch (e) {
             console.error("멤버 로딩 실패", e);
         }
     }
 
-    // ----------------------------------------------------
-    // 1. 모드 전환 (탭 클릭)
-    // ----------------------------------------------------
+    // 모드 전환
     function switchMode(mode) {
         currentMode = mode;
-        calendar.removeAllEvents(); // 화면 초기화
+        calendar.removeAllEvents();
 
-        // 버튼 UI 제어
+        // 탭 버튼 스타일 업데이트
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         if (mode === 'edit') {
-            document.getElementById('result-controls').style.display = 'none';
+            document.getElementById('tab-edit').classList.add('active');
+            document.getElementById('result-controls').classList.remove('show');
             calendar.changeView('timeGridWeek');
             loadMyEvents();
         } else {
-            document.getElementById('result-controls').style.display = 'block';
-            showResult('time'); // 기본은 시간 보기
+            document.getElementById('tab-result').classList.add('active');
+            document.getElementById('result-controls').classList.add('show');
+            showResult('time');
         }
     }
 
-    // ----------------------------------------------------
-    // 2. 내 일정 불러오기 (편집 모드)
-    // ----------------------------------------------------
+    // 내 일정 불러오기
     async function loadMyEvents() {
+        showLoading(true);
         try {
             const response = await fetch(`/api/rooms/${currentUuid}/my-events`);
             if (response.ok) {
                 const events = await response.json();
                 console.log("내 일정 데이터:", events);
 
-                const mappedEvents = events.map(e => ({
-                    id: e.id,       // DTO의 id (구글ID)
-                    title: e.title, // DTO의 title
-                    start: e.start, // DTO의 start
-                    end: e.end,     // DTO의 end
+                // 겹침을 방지하기 위해 이벤트를 시간순으로 정렬
+                const sortedEvents = events.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+                const mappedEvents = sortedEvents.map(e => ({
+                    id: e.id,
+                    title: e.title,
+                    start: e.start,
+                    end: e.end,
                     className: e.isIgnored ? 'ignored-event' : '',
-                    color: e.isIgnored ? '#d6d8db' : '#3788d8'
+                    color: e.isIgnored ? '#9ca3af' : '#6366f1',
+                    overlap: false, // 겹침 방지
+                    display: 'block'
                 }));
 
                 calendar.addEventSource(mappedEvents);
+            } else if (response.status === 401) {
+                console.log("로그인 필요");
             }
         } catch (e) {
             console.error("내 일정 로딩 실패", e);
+            showToast('일정을 불러오는 중 오류가 발생했습니다.', 'error');
+        } finally {
+            showLoading(false);
         }
     }
 
-    // ----------------------------------------------------
-    // 3. 일정 무시 토글 (클릭 이벤트)
-    // ----------------------------------------------------
+    // 일정 무시 토글
     async function toggleIgnoreEvent(eventObj) {
-        if (!confirm(`'${eventObj.title}' 일정을 계산에서 제외(또는 복구)하시겠습니까?`)) return;
+        const isIgnored = eventObj.classNames.includes('ignored-event');
+        const action = isIgnored ? '복구' : '제외';
 
         try {
-            // 주소 끝에 /toggle 없음 (백엔드와 일치)
             const response = await fetch(`/api/rooms/${currentUuid}/events/${eventObj.id}`, {
                 method: 'POST'
             });
 
             if (response.ok) {
-                if (eventObj.classNames.includes('ignored-event')) {
-                    // 복구됨
+                if (isIgnored) {
                     eventObj.setProp('classNames', []);
-                    eventObj.setProp('color', '#3788d8');
+                    eventObj.setProp('color', '#6366f1');
+                    showToast(`'${eventObj.title}' 일정이 복구되었습니다.`);
                 } else {
-                    // 무시됨 (회색 처리)
                     eventObj.setProp('classNames', ['ignored-event']);
-                    eventObj.setProp('color', '#d6d8db');
+                    eventObj.setProp('color', '#9ca3af');
+                    showToast(`'${eventObj.title}' 일정이 제외되었습니다.`);
                 }
             } else {
-                alert("처리 실패!");
+                showToast('처리 중 오류가 발생했습니다.', 'error');
             }
         } catch (e) {
             console.error(e);
+            showToast('서버 통신 중 오류가 발생했습니다.', 'error');
         }
     }
 
-    // ----------------------------------------------------
-    // 4. 결과 보기 (시간 vs 날짜)
-    // ----------------------------------------------------
+    // 결과 보기
     async function showResult(type) {
+        showLoading(true);
         calendar.removeAllEvents();
 
         // 버튼 활성화 스타일 처리
-        const btns = document.querySelectorAll('#result-controls button');
+        const btns = document.querySelectorAll('.view-toggle-btn');
         btns.forEach(b => b.classList.remove('active'));
         if(window.event && window.event.target.tagName === 'BUTTON') {
             window.event.target.classList.add('active');
         }
 
-        if (type === 'time') {
-            calendar.changeView('timeGridWeek');
+        try {
+            if (type === 'time') {
+                calendar.changeView('timeGridWeek');
 
-            try {
-                // 시간 API 호출
                 const res = await fetch(`/api/rooms/${currentUuid}/available-times`);
+                if (!res.ok) {
+                    throw new Error('시간 데이터를 불러올 수 없습니다.');
+                }
+
                 const slots = await res.json();
                 console.log("빈 시간 데이터:", slots);
 
                 if(slots.length === 0) {
-                    alert("가능한 시간이 하나도 없습니다! 😭");
+                    showToast('가능한 시간이 하나도 없습니다! 😭', 'error');
+                } else {
+                    // 겹침을 방지하기 위해 이벤트를 정렬하여 추가
+                    const sortedSlots = slots.sort((a, b) => new Date(a.start) - new Date(b.start));
+                    const events = sortedSlots.map((s, index) => ({
+                        id: `free-time-${index}`,
+                        title: `가능한 시간 (${formatTime(s.start)} - ${formatTime(s.end)})`,
+                        start: s.start,
+                        end: s.end,
+                        display: 'block',
+                        className: 'free-time-highlight',
+                        color: '#10b981',
+                        overlap: false, // 겹침 방지
+                        constraint: 'businessHours'
+                    }));
+
+                    calendar.addEventSource(events);
+                    showToast(`${slots.length}개의 가능한 시간대를 찾았습니다!`);
+                }
+            } else if (type === 'date') {
+                calendar.changeView('dayGridMonth');
+
+                const res = await fetch(`/api/rooms/${currentUuid}/available-dates`);
+                if (!res.ok) {
+                    throw new Error('날짜 데이터를 불러올 수 없습니다.');
                 }
 
-
-
-                const events = slots.map(s => ({
-                    title: '가능!',
-                    start: s.start,
-                    end: s.end,
-                    display: 'block',
-                    className: 'free-time-highlight',
-                    color: '#28a745'
-                }));
-
-                calendar.addEventSource(events);
-            } catch(e) { console.error(e); }
-
-        } else if (type === 'date') {
-            calendar.changeView('dayGridMonth');
-
-            try {
-                // 날짜 API 호출
-                const res = await fetch(`/api/rooms/${currentUuid}/available-dates`);
                 const dates = await res.json();
                 console.log("빈 날짜 데이터:", dates);
 
-                const events = dates.map(d => ({
-                    title: '완전 빈 날!',
-                    start: d,
-                    display: 'background',
-                    className: 'free-time-highlight',
-                    color: '#28a745'
-                }));
-                calendar.addEventSource(events);
-            } catch(e) { console.error(e); }
+                if(dates.length === 0) {
+                    showToast('가능한 날짜가 하나도 없습니다! 😭', 'error');
+                } else {
+                    const events = dates.map((d, index) => ({
+                        id: `free-date-${index}`,
+                        title: '✅ 가능한 날',
+                        start: d,
+                        display: 'background',
+                        className: 'free-time-highlight',
+                        color: '#10b981',
+                        overlap: false // 겹침 방지
+                    }));
+
+                    calendar.addEventSource(events);
+                    showToast(`${dates.length}개의 가능한 날짜를 찾았습니다!`);
+                }
+            }
+        } catch(e) {
+            console.error(e);
+            showToast('데이터를 불러오는 중 오류가 발생했습니다.', 'error');
+        } finally {
+            showLoading(false);
         }
     }
 
     function copyLink() {
-        navigator.clipboard.writeText(window.location.href);
-        alert("링크 복사 완료!");
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            showToast('링크가 클립보드에 복사되었습니다!');
+        }).catch(() => {
+            showToast('링크 복사에 실패했습니다.', 'error');
+        });
+    }
+
+    // 시간 포맷팅 헬퍼 함수
+    function formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
     }
 </script>
-
 </body>
 </html>

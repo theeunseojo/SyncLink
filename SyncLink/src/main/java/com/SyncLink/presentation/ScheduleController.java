@@ -18,11 +18,6 @@ import java.util.List;
 public class ScheduleController {
     private final ScheduleService scheduleService;
 
-//    @GetMapping("/api/schedule/{uuid}/events")
-//    public ResponseEntity<?> scheduleEventsByRoom(@PathVariable String uuid){
-//        List<TimeSlotDto> events = scheduleService.getFreeTimesByRoom(uuid);
-//        return ResponseEntity.ok(events);
-//    }
 
     // 시간모드 ( 빈 시간 찾기)
     @GetMapping("/api/rooms/{uuid}/available-times")

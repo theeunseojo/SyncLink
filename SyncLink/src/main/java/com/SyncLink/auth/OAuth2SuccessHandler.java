@@ -46,10 +46,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         if (redirectUuidObj != null) {
             String redirectUuid = redirectUuidObj.toString();
             session.removeAttribute("redirectUuid");
-            getRedirectStrategy().sendRedirect(request, response, "/room.html?uuid=" + redirectUuid);
+            getRedirectStrategy().sendRedirect(request, response, "/room.html?uuid=" + redirectUuid + "&login=success");
         } else {
             // 방 정보 존재 X -> 메인페이지
-            getRedirectStrategy().sendRedirect(request, response, "/index.html");
+            getRedirectStrategy().sendRedirect(request, response, "/index.html?login=success");
         }
     }
 }
