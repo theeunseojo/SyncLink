@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모임 시간 결과</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+    <style>
+        /* 캘린더 크기 조절 */
+        #calendar {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        /* 빈 시간(가능한 시간) 하이라이팅 색상 */
+        .free-time-highlight {
+            background-color: #d4edda !important; /* 연한 초록색 */
+            border: none !important;
+            opacity: 0.7;
+        }
+        .fc-event-title {
+            color: #155724;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>✨ 우리 조 가능한 시간</h4>
+        <button class="btn btn-outline-primary btn-sm" onclick="copyLink()">🔗 링크 복사</button>
+    </div>
+
+    <div id='calendar' class="shadow-sm"></div>
+
+    <div class="text-center mt-4">
+        <p class="text-muted small">내 일정도 포함해서 다시 계산하려면?</p>
+        <a id="loginBtn" href="#" class="btn btn-dark btn-sm">
+            📅 구글 로그인하고 참여하기
+        </a>
+    </div>
+</div>
+
+<script>
+
+    let calendar; // 전역 변수
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const calendarEl = document.getElementById('calendar');
+        const params = new URLSearchParams(window.location.search);
+        const uuid = params.get('uuid');
+
+        if (!uuid) {
+            alert("잘못된 접근입니다.");
+            return;
+        }
+
+        // 로그인 버튼 링크 설정 (/login/google?uuid=...)
+        document.getElementById('loginBtn').href = `/login/google?uuid=${uuid}`;
+
+
+        // 1. 캘린더 기본 설정 (FullCalendar v6)
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek', // 주간 뷰 (시간까지 보임)
+            locale: 'ko', // 한국어
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'timeGridWeek,dayGridMonth'
+            },
+            allDaySlot: false, // 종일 일정 칸 숨기기 (필요하면 true)
+            slotMinTime: '08:00:00', // 캘린더 시작 시간 (오전 8시)
+            slotMaxTime: '22:00:00', // 캘린더 종료 시간 (오후 10시)
+            height: 'auto',
+
+            // ⭐ 클릭 이벤트 (꾹 누르기/클릭)
+            dateClick: function(info) {
+                // 여기서 "시간 설정" 팝업을 띄우면 됩니다!
+                alert('선택한 시간: ' + info.dateStr);
+            },
+            events: [] // 데이터는 아래에서 채움
+        });
+
+        calendar.render(); // 일단 빈 캘린더 그리기
+
+        // 2. 백엔드에서 빈 시간 가져오기
+        try {
+            const response = await fetch(`/api/schedule/${uuid}/events`);
+            if (response.ok) {
+                const timeSlots = await response.json();
+
+                // 3. 데이터를 FullCalendar 형식으로 변환
+                const events = timeSlots.map(slot => ({
+                    title: '가능!',
+                    start: slot.start,
+                    end: slot.end,
+                    display: 'background', // ⭐ 배경색으로 칠하기 (중요)
+                    className: 'free-time-highlight' // CSS 클래스 적용
+                }));
+
+                // 캘린더에 이벤트 추가
+                calendar.addEventSource(events);
+            }
+        } catch (error) {
+            console.error("데이터 로딩 실패", error);
+        }
+    });
+
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href);
+        alert("링크가 복사되었습니다! 친구에게 공유하세요.");
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>언제비어 - 시작하기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .google-btn { background-color: #dd4b39; color: white; }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container d-flex flex-column justify-content-center align-items-center vh-100">
+    <div class="card shadow p-4" style="width: 100%; max-width: 400px;">
+        <h1 class="text-center mb-4">🔗 언제비어</h1>
+        <p class="text-center text-muted">친구들과 비는 시간을 3초 만에 찾으세요.</p>
+
+        <div id="login-section" class="d-grid gap-2 mb-4">
+            <a href="/oauth2/authorization/google" class="btn google-btn">
+                📅 구글 로그인하고 내 일정 불러오기
+            </a>
+        </div>
+
+        <hr>
+
+        <div id="create-room-section">
+            <h5 class="mb-3">방 만들기</h5>
+            <div class="mb-3">
+                <label class="form-label">모임 이름</label>
+                <input type="text" id="title" class="form-control" placeholder="예: 캡스톤 회의">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">언제 만날까요?</label>
+                <input type="datetime-local" id="startDateTime" class="form-control mb-2">
+                <input type="datetime-local" id="endDateTime" class="form-control">
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="dateOnlyMode">
+                <label class="form-check-label" for="dateOnlyMode">
+                    시간 상관없이 날짜만 볼래요 (준비중)
+                </label>
+            </div>
+
+            <button onclick="createRoom()" class="btn btn-primary w-100">방 만들고 링크 공유하기 🚀</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 페이지가 로드될 때 자동으로 캘린더 동기화를 시도합니다.
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log("캘린더 동기화를 시도합니다...");
+        try {
+            const response = await fetch('/api/events', {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                const message = await response.text();
+                console.log("캘린더 동기화 성공:", message);
+                // 사용자에게 성공을 알리는 간단한 알림을 띄울 수도 있습니다.
+                // alert("캘린더 동기화가 완료되었습니다.");
+            } else if (response.status === 401) {
+                // 401 Unauthorized는 사용자가 로그인하지 않았음을 의미합니다.
+                // 이 경우엔 특별한 오류 메시지 없이 조용히 넘어갑니다.
+                console.log("로그인 상태가 아니므로 캘린더를 동기화하지 않습니다.");
+            }
+            else {
+                // 그 외 다른 오류
+                console.error("캘린더 동기화 실패:", response.statusText);
+            }
+        } catch (e) {
+            console.error("캘린더 동기화 중 에러 발생:", e);
+        }
+    });
+</script>
+
+<script>
+    async function createRoom() {
+        const title = document.getElementById('title').value;
+        const start = document.getElementById('startDateTime').value;
+        const end = document.getElementById('endDateTime').value;
+
+
+        if(!title || !start || !end ) {
+            alert("정보를 모두 입력해주세요!");
+            return;
+        }
+
+        const data = {
+            title: title,
+            startDateTime: start,
+            endDateTime: end,
+
+        };
+
+        try {
+            const response = await fetch('/api/rooms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                const uuid = await response.text();
+                // 방 생성 후 결과 페이지로 이동
+                window.location.href = `/room.html?uuid=${uuid}`;
+            } else {
+                alert("방 생성 실패!");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("에러 발생!");
+        }
+    }
+
+</script>
+</body>
+</html>

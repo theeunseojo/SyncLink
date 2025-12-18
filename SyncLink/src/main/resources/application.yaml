@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: SyncLink
+  datasource:
+    url: jdbc:h2:mem:synclinkdb
+    driver-class-name: org.h2.Driver
+    username: eun
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    properties:
+      hibernate:
+        ddl-auto: update
+        format_sql: true
+        highlight_sql: true
+        default_batch_fetch_size: 100
+    show-sql: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+              - https://www.googleapis.com/auth/calendar.events.readonly
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql: trace
