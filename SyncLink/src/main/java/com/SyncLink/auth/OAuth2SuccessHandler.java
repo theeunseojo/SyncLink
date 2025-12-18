@@ -1,6 +1,8 @@
 package com.SyncLink.auth;
 
 
+import com.SyncLink.domain.Member;
+import com.SyncLink.infrastructure.MemberRepository;
 import com.SyncLink.service.EventService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +19,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final EventService eventService;
+    private final MemberRepository memberRepository;
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
        // 이벤트
@@ -30,9 +33,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             e.getMessage();
         }
 
-
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("이메일에 해당하는 회원이 없습니다."));
 
         HttpSession session = request.getSession();
+        session.setAttribute("memberId", member.getId());
+
+        // 리다이렉트 로직
         Object redirectUuidObj = session.getAttribute("redirectUuid");
 
         // 방 정보 존재시 방으로 리다이렉트

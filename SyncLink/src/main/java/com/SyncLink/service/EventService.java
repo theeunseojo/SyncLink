@@ -93,10 +93,7 @@ public class EventService {
         // 각 이벤트마다 찢어서 저장하기
         List<Event> items = events.getItems();
 
-        // 도메인 Event List
-        List<com.SyncLink.domain.Event> eventList = new ArrayList<>();
         if(!items.isEmpty()){
-            eventRepository.deleteByMember(member);
 
             // 일정들을 일정별로 쪼개서 저장하기
             for(Event event : items){
@@ -119,23 +116,33 @@ public class EventService {
                 LocalDateTime endLocal = toLocalDateTime(end);
 
 
-                // Event 도메인으로 변환
-                com.SyncLink.domain.Event newEvent = com.SyncLink.domain.Event.builder()
-                        .member(member)
-                        .title(event.getSummary())
-                        .startTime(startLocal)
-                        .endTime(endLocal)
-                        .build();
+                // 부분 업데이트
+                eventRepository.findByGoogleEventId(event.getId())
+                        .ifPresentOrElse(
+                                existingEvent -> {
+                                    existingEvent.setTitle(event.getSummary());
+                                    existingEvent.setStartTime(startLocal);
+                                    existingEvent.setEndTime(endLocal);
+                                },
+                                () -> {
+                                    // Event 도메인으로 변환
+                                    com.SyncLink.domain.Event newEvent = com.SyncLink.domain.Event.builder()
+                                            .member(member)
+                                            .googleEventId(event.getId()) // 구글 ID 필수
+                                            .title(event.getSummary())
+                                            .startTime(startLocal)
+                                            .endTime(endLocal)
+                                            .build();
+                                    eventRepository.save(newEvent);
+
+                                }
+                        );
 
                 // 확인용
                 System.out.printf("%s (%s)\n", event.getSummary(), start);
 
-
-                eventList.add(newEvent);
             }
 
-            // 저장
-            eventRepository.saveAll(eventList);
         }
 
 

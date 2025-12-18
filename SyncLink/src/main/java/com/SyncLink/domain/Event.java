@@ -1,19 +1,20 @@
 package com.SyncLink.domain;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Event {
     @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(unique = true)
+    private String googleEventId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
@@ -23,11 +24,12 @@ public class Event {
     private LocalDateTime endTime;
 
     @Builder
-    public Event(Member member, String title, LocalDateTime startTime, LocalDateTime endTime) {
+    public Event(Member member, String title, LocalDateTime startTime, LocalDateTime endTime, String googleEventId) {
         this.member = member;
         this.title = title;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.googleEventId= googleEventId;
     }
 
 }

@@ -1,14 +1,15 @@
 package com.SyncLink.presentation;
 
 
+
 import com.SyncLink.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,6 +24,12 @@ public class RoomController {
 
         String uuid = roomService.createRoom(request,email);
         return ResponseEntity.ok(uuid);
+    }
+
+    @GetMapping("/api/rooms/{uuid}/members")
+    public ResponseEntity<List<String>> getRoomMembers(@PathVariable String uuid){
+        List<String> memberNames = roomService.getMemberByRoom(uuid);
+        return ResponseEntity.ok(memberNames);
     }
 
 

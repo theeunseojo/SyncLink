@@ -2,14 +2,14 @@ package com.SyncLink.service;
 
 import com.SyncLink.domain.Member;
 import com.SyncLink.domain.Room;
-import com.SyncLink.infrastructure.EventRepository;
 import com.SyncLink.infrastructure.MemberRepository;
 import com.SyncLink.infrastructure.RoomRepository;
 import com.SyncLink.presentation.RoomCreateRequest;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -41,6 +41,19 @@ public class RoomService {
         bangjang.setRoom(room);
 
         return roomUuid;
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getMemberByRoom(String uuid){
+        Room room = roomRepository.findByRoomUUID(uuid)
+                .orElseThrow(() -> new IllegalArgumentException("방이 존재하지 않습니다."));
+
+        List<String> members = memberRepository.findAllByRoom(room)
+                .stream()
+                .map(member -> member.getName())
+                .toList();
+
+        return members;
     }
 
 

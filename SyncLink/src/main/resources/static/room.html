@@ -3,118 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>모임 시간 결과</title>
+    <title>모임 시간 조율</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
-
     <style>
-        /* 캘린더 크기 조절 */
         #calendar {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: white;
-            padding: 10px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 12px;
+            min-height: 600px;
         }
-        /* 빈 시간(가능한 시간) 하이라이팅 색상 */
+
+        /* 1. 결과: 가능한 시간 (초록색) */
         .free-time-highlight {
-            background-color: #d4edda !important; /* 연한 초록색 */
-            border: none !important;
-            opacity: 0.7;
+            background-color: #28a745 !important;
+            opacity: 0.6;
+            border: none;
         }
-        .fc-event-title {
-            color: #155724;
+
+        /* 2. 편집: 무시된 내 일정 (회색 + 취소선) */
+        .ignored-event {
+            background-color: #d6d8db !important;
+            border-color: #c6c8cb !important;
+            text-decoration: line-through;
+            opacity: 0.7;
+            color: #6c757d !important;
+        }
+
+        /* 탭 버튼 스타일 */
+        .nav-pills .nav-link.active {
+            background-color: #343a40;
+        }
+        .nav-pills .nav-link {
+            color: #343a40;
             font-weight: bold;
-            text-align: center;
         }
     </style>
 </head>
 <body class="bg-light">
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
+
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>✨ 우리 조 가능한 시간</h4>
-        <button class="btn btn-outline-primary btn-sm" onclick="copyLink()">🔗 링크 복사</button>
+        <h4 id="roomTitle">📅 모임 시간 조율</h4>
+        <div>
+            <a id="loginBtn" href="#" class="btn btn-warning btn-sm me-2">🔔 구글 로그인/참여</a>
+            <button class="btn btn-outline-primary btn-sm" onclick="copyLink()">🔗 링크 복사</button>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body">
+            <h6 class="card-title fw-bold text-primary">👥 현재 참여 중인 멤버</h6>
+            <div id="member-list" class="d-flex flex-wrap gap-2">
+                <span class="text-muted small">불러오는 중...</span>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-3 justify-content-center" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-my-schedule" data-bs-toggle="pill" onclick="switchMode('edit')">
+                ✏️ 내 일정 수정 (제외하기)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-result" data-bs-toggle="pill" onclick="switchMode('result')">
+                ✨ 빈 시간 결과 보기
+            </button>
+        </li>
+    </ul>
+
+    <div id="result-controls" class="text-center mb-3" style="display: none;">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-success active" onclick="showResult('time')">시간으로 보기</button>
+            <button type="button" class="btn btn-outline-success" onclick="showResult('date')">날짜로만 보기</button>
+        </div>
     </div>
 
     <div id='calendar' class="shadow-sm"></div>
 
-    <div class="text-center mt-4">
-        <p class="text-muted small">내 일정도 포함해서 다시 계산하려면?</p>
-        <a id="loginBtn" href="#" class="btn btn-dark btn-sm">
-            📅 구글 로그인하고 참여하기
-        </a>
+    <div class="text-center mt-3">
+        <p class="text-muted small">* '내 일정 수정' 탭에서 일정을 클릭하면 계산에서 제외(무시)됩니다.</p>
     </div>
 </div>
 
 <script>
+    let calendar;
+    let currentUuid = new URLSearchParams(window.location.search).get('uuid');
+    let currentMode = 'edit';
 
-    let calendar; // 전역 변수
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!currentUuid) { alert("잘못된 접근입니다."); return; }
 
-    document.addEventListener('DOMContentLoaded', async function() {
-        const calendarEl = document.getElementById('calendar');
-        const params = new URLSearchParams(window.location.search);
-        const uuid = params.get('uuid');
-
-        if (!uuid) {
-            alert("잘못된 접근입니다.");
-            return;
+        // 로그인 버튼 링크 설정
+        const loginBtn = document.getElementById('loginBtn');
+        if(loginBtn) {
+            loginBtn.href = `/login/google?uuid=${currentUuid}`;
         }
 
-        // 로그인 버튼 링크 설정 (/login/google?uuid=...)
-        document.getElementById('loginBtn').href = `/login/google?uuid=${uuid}`;
+        const calendarEl = document.getElementById('calendar');
 
-
-        // 1. 캘린더 기본 설정 (FullCalendar v6)
+        // 캘린더 초기화
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek', // 주간 뷰 (시간까지 보임)
-            locale: 'ko', // 한국어
+            initialView: 'timeGridWeek',
+            locale: 'ko',
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
                 right: 'timeGridWeek,dayGridMonth'
             },
-            allDaySlot: false, // 종일 일정 칸 숨기기 (필요하면 true)
-            slotMinTime: '08:00:00', // 캘린더 시작 시간 (오전 8시)
-            slotMaxTime: '22:00:00', // 캘린더 종료 시간 (오후 10시)
             height: 'auto',
-
-            // ⭐ 클릭 이벤트 (꾹 누르기/클릭)
-            dateClick: function(info) {
-                // 여기서 "시간 설정" 팝업을 띄우면 됩니다!
-                alert('선택한 시간: ' + info.dateStr);
-            },
-            events: [] // 데이터는 아래에서 채움
+            allDaySlot: true,
+            // 이벤트 클릭 시 (편집 모드일 때만 동작)
+            eventClick: function(info) {
+                if (currentMode === 'edit') {
+                    toggleIgnoreEvent(info.event);
+                } else {
+                    alert("결과 화면에서는 수정할 수 없습니다.");
+                }
+            }
         });
 
-        calendar.render(); // 일단 빈 캘린더 그리기
+        calendar.render();
 
-        // 2. 백엔드에서 빈 시간 가져오기
+        // 처음엔 내 일정 로딩
+        loadMyEvents();
+        loadMembers();
+    });
+
+    // ----------------------------------------------------
+    // [NEW] 멤버 목록 불러오기
+    // ----------------------------------------------------
+    async function loadMembers() {
         try {
-            const response = await fetch(`/api/schedule/${uuid}/events`);
+            const response = await fetch(`/api/rooms/${currentUuid}/members`);
             if (response.ok) {
-                const timeSlots = await response.json();
+                const members = await response.json();
+                const listEl = document.getElementById('member-list');
 
-                // 3. 데이터를 FullCalendar 형식으로 변환
-                const events = timeSlots.map(slot => ({
-                    title: '가능!',
-                    start: slot.start,
-                    end: slot.end,
-                    display: 'background', // ⭐ 배경색으로 칠하기 (중요)
-                    className: 'free-time-highlight' // CSS 클래스 적용
+                if (members.length === 0) {
+                    listEl.innerHTML = '<span class="text-muted small">아직 아무도 안 왔어요!</span>';
+                    return;
+                }
+
+                // 멤버 이름표(뱃지) 만들기
+                listEl.innerHTML = members.map(name =>
+                    `<span class="badge bg-info text-dark border p-2">😊 ${name}</span>`
+                ).join('');
+
+                // (선택사항) 몇 명인지 제목 옆에 표시해도 좋음
+                // document.getElementById('roomTitle').innerText += ` (${members.length}명)`;
+            }
+        } catch (e) {
+            console.error("멤버 로딩 실패", e);
+        }
+    }
+
+    // ----------------------------------------------------
+    // 1. 모드 전환 (탭 클릭)
+    // ----------------------------------------------------
+    function switchMode(mode) {
+        currentMode = mode;
+        calendar.removeAllEvents(); // 화면 초기화
+
+        // 버튼 UI 제어
+        if (mode === 'edit') {
+            document.getElementById('result-controls').style.display = 'none';
+            calendar.changeView('timeGridWeek');
+            loadMyEvents();
+        } else {
+            document.getElementById('result-controls').style.display = 'block';
+            showResult('time'); // 기본은 시간 보기
+        }
+    }
+
+    // ----------------------------------------------------
+    // 2. 내 일정 불러오기 (편집 모드)
+    // ----------------------------------------------------
+    async function loadMyEvents() {
+        try {
+            const response = await fetch(`/api/rooms/${currentUuid}/my-events`);
+            if (response.ok) {
+                const events = await response.json();
+                console.log("내 일정 데이터:", events);
+
+                const mappedEvents = events.map(e => ({
+                    id: e.id,       // DTO의 id (구글ID)
+                    title: e.title, // DTO의 title
+                    start: e.start, // DTO의 start
+                    end: e.end,     // DTO의 end
+                    className: e.isIgnored ? 'ignored-event' : '',
+                    color: e.isIgnored ? '#d6d8db' : '#3788d8'
                 }));
 
-                // 캘린더에 이벤트 추가
-                calendar.addEventSource(events);
+                calendar.addEventSource(mappedEvents);
             }
-        } catch (error) {
-            console.error("데이터 로딩 실패", error);
+        } catch (e) {
+            console.error("내 일정 로딩 실패", e);
         }
-    });
+    }
+
+    // ----------------------------------------------------
+    // 3. 일정 무시 토글 (클릭 이벤트)
+    // ----------------------------------------------------
+    async function toggleIgnoreEvent(eventObj) {
+        if (!confirm(`'${eventObj.title}' 일정을 계산에서 제외(또는 복구)하시겠습니까?`)) return;
+
+        try {
+            // 주소 끝에 /toggle 없음 (백엔드와 일치)
+            const response = await fetch(`/api/rooms/${currentUuid}/events/${eventObj.id}`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                if (eventObj.classNames.includes('ignored-event')) {
+                    // 복구됨
+                    eventObj.setProp('classNames', []);
+                    eventObj.setProp('color', '#3788d8');
+                } else {
+                    // 무시됨 (회색 처리)
+                    eventObj.setProp('classNames', ['ignored-event']);
+                    eventObj.setProp('color', '#d6d8db');
+                }
+            } else {
+                alert("처리 실패!");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // ----------------------------------------------------
+    // 4. 결과 보기 (시간 vs 날짜)
+    // ----------------------------------------------------
+    async function showResult(type) {
+        calendar.removeAllEvents();
+
+        // 버튼 활성화 스타일 처리
+        const btns = document.querySelectorAll('#result-controls button');
+        btns.forEach(b => b.classList.remove('active'));
+        if(window.event && window.event.target.tagName === 'BUTTON') {
+            window.event.target.classList.add('active');
+        }
+
+        if (type === 'time') {
+            calendar.changeView('timeGridWeek');
+
+            try {
+                // 시간 API 호출
+                const res = await fetch(`/api/rooms/${currentUuid}/available-times`);
+                const slots = await res.json();
+                console.log("빈 시간 데이터:", slots);
+
+                if(slots.length === 0) {
+                    alert("가능한 시간이 하나도 없습니다! 😭");
+                }
+
+
+
+                const events = slots.map(s => ({
+                    title: '가능!',
+                    start: s.start,
+                    end: s.end,
+                    display: 'block',
+                    className: 'free-time-highlight',
+                    color: '#28a745'
+                }));
+
+                calendar.addEventSource(events);
+            } catch(e) { console.error(e); }
+
+        } else if (type === 'date') {
+            calendar.changeView('dayGridMonth');
+
+            try {
+                // 날짜 API 호출
+                const res = await fetch(`/api/rooms/${currentUuid}/available-dates`);
+                const dates = await res.json();
+                console.log("빈 날짜 데이터:", dates);
+
+                const events = dates.map(d => ({
+                    title: '완전 빈 날!',
+                    start: d,
+                    display: 'background',
+                    className: 'free-time-highlight',
+                    color: '#28a745'
+                }));
+                calendar.addEventSource(events);
+            } catch(e) { console.error(e); }
+        }
+    }
 
     function copyLink() {
         navigator.clipboard.writeText(window.location.href);
-        alert("링크가 복사되었습니다! 친구에게 공유하세요.");
+        alert("링크 복사 완료!");
     }
 </script>
 
