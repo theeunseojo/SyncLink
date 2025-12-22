@@ -2,6 +2,7 @@ package com.SyncLink.presentation;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 public record TimeSlotDto(
@@ -9,4 +10,8 @@ public record TimeSlotDto(
         LocalDateTime start,
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime end) {
+
+        public Long getDurationMin(){
+            return Duration.between(start, end).toMinutes();
+        }
 }

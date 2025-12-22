@@ -5,10 +5,7 @@ import com.SyncLink.service.ScheduleService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,12 +18,12 @@ public class ScheduleController {
 
     // 시간모드 ( 빈 시간 찾기)
     @GetMapping("/api/rooms/{uuid}/available-times")
-    public ResponseEntity<List<TimeSlotDto>> getAvailableTimes(@PathVariable String uuid) {
-        List<TimeSlotDto> slots = scheduleService.getFreeTimesByRoom(uuid);
+    public ResponseEntity<List<TimeSlotDto>> getAvailableTimes(@PathVariable String uuid,@RequestParam String sort) {
+        List<TimeSlotDto> slots = scheduleService.getFreeTimesByRoom(uuid,sort);
         return ResponseEntity.ok(slots);
     }
 
-    // 날짜모드
+    // 날짜모드 (빈시간 찾기)
     @GetMapping("/api/rooms/{uuid}/available-dates")
     public ResponseEntity<List<LocalDate>> getAvailableDates(@PathVariable String uuid){
         List<LocalDate> dates = scheduleService.findFreeDates(uuid);

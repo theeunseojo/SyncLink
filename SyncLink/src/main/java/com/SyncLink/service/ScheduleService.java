@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import static java.lang.Long.compare;
+
+
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
@@ -138,18 +141,24 @@ public class ScheduleService {
 
     // 방 찾아서 멤버들의 일정을 찾아서 빈시간 계산
     @Transactional(readOnly = true)
-    public List<TimeSlotDto> getFreeTimesByRoom(String uuid){
+    public List<TimeSlotDto> getFreeTimesByRoom(String uuid, String sort){
 
         // 방 찾기
         Room room = roomRepository.findByRoomUUID(uuid)
                 .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다."));
 
         List<Event> validEvents = getValidEvents(room);
+        List<TimeSlotDto> results = findFreeTimes(validEvents,room.getStartTime(), room.getEndTime());
 
-        return findFreeTimes(validEvents,room.getStartTime(), room.getEndTime());
+        // 내림차순
+        if(sort.equals("LONGEST")){
+            results.sort((a, b) -> Long.compare(b.getDurationMin(), a.getDurationMin()));
+        }
+
+        return results;
     }
 
-    // 일정 제외하는 기능
+    // 일정 수정
     @Transactional
     public void toggleIgnoreEvent(String roomUuid, Long memberId, String googleEventId){
         Room room = roomRepository.findByRoomUUID(roomUuid)
@@ -157,7 +166,7 @@ public class ScheduleService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("멤버를 찾을 수 없습니다."));
 
-        // 이벤트가 존재하면 복구하고, 없으면  저장
+        // 이벤트 존재시 삭제, 없으면 다시 복구
         ignoredEventRepository.findByRoomAndMemberAndGoogleEventId(room, member, googleEventId)
                 .ifPresentOrElse(
                         existing -> ignoredEventRepository.delete(existing),
