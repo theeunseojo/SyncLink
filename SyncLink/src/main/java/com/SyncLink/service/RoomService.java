@@ -22,7 +22,7 @@ public class RoomService {
         private final RoomMemberRepository roomMemberRepository;
 
         @Transactional
-        public String createRoom(RoomCreateRequest request, String email) {
+        public String createRoom(RoomCreateRequest request, Long memberId) {
                 // 방 할당 고유주소
                 String roomUuid = UUID.randomUUID().toString();
 
@@ -36,7 +36,7 @@ public class RoomService {
                 roomRepository.save(room);
 
                 // 방장을 RoomMember로 등록
-                Member bangjang = memberRepository.findByEmail(email)
+                Member bangjang = memberRepository.findById(memberId)
                                 .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
                 RoomMember roomMember = RoomMember.builder()

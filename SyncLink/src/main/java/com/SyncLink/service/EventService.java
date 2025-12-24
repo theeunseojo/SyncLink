@@ -1,6 +1,5 @@
 package com.SyncLink.service;
 
-
 import com.SyncLink.domain.Member;
 import com.SyncLink.infrastructure.EventRepository;
 import com.SyncLink.infrastructure.MemberRepository;
@@ -20,22 +19,22 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class EventService {
     private final MemberRepository memberRepository;
-    private  final EventRepository eventRepository;
+    private final EventRepository eventRepository;
 
     // 기본 설정
     private static final String APPLICATION_NAME = "SyncLink";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
     // 날짜 변환 LocalDateTime -> DateTime
-    private DateTime toGoogleDateTime(LocalDateTime localDateTime){
-        if(localDateTime == null) return null;
+    private DateTime toGoogleDateTime(LocalDateTime localDateTime) {
+        if (localDateTime == null)
+            return null;
 
         long epochMills = localDateTime.atZone(ZoneId.systemDefault())
                 .toInstant()
@@ -43,9 +42,10 @@ public class EventService {
         return new DateTime(epochMills);
     }
 
-    //날짜 변환 DateTime -> LocalDateTime
-    private LocalDateTime toLocalDateTime(DateTime googleTime){
-        if(googleTime == null) return null;
+    // 날짜 변환 DateTime -> LocalDateTime
+    private LocalDateTime toLocalDateTime(DateTime googleTime) {
+        if (googleTime == null)
+            return null;
         long epochMillis = googleTime.getValue();
 
         // 종일일정 -> 한국시간대로 나오는 경우 고려해서 형식을 00:00:00으로 맞추기
@@ -55,16 +55,14 @@ public class EventService {
 
         return LocalDateTime.ofInstant(
                 Instant.ofEpochMilli(epochMillis),
-                ZoneId.systemDefault()
-        );
+                ZoneId.systemDefault());
     }
 
-
     @Transactional
-    public void saveEvents(String email) throws Exception{
+    public void saveEvents(Long memberId) throws Exception {
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
         // 캘린더 요청할 토큰을 찾기 위해 멤버를 찾는다.
-        Member member = memberRepository.findByEmail(email)
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("member 객체가 존재하지 않음"));
 
         // 조회 범위 설정 (오늘부터 약 3개월정도 가져오기)
@@ -77,8 +75,8 @@ public class EventService {
         Calendar service = new Calendar.Builder(
                 HTTP_TRANSPORT,
                 JSON_FACTORY,
-                request -> request.getHeaders().setAuthorization("Bearer " + member.getToken())
-        ).setApplicationName(APPLICATION_NAME).build();
+                request -> request.getHeaders().setAuthorization("Bearer " + member.getToken()))
+                .setApplicationName(APPLICATION_NAME).build();
 
         // 요청
         Events events = service.events().list("primary")
@@ -88,33 +86,31 @@ public class EventService {
                 .setTimeMax(timeMax)
                 .execute();
 
-        //저장
+        // 저장
         // 기존의 데이터가 있다면 삭제하고 다시 저장하기
         // 각 이벤트마다 찢어서 저장하기
         List<Event> items = events.getItems();
 
-        if(!items.isEmpty()){
+        if (!items.isEmpty()) {
 
             // 일정들을 일정별로 쪼개서 저장하기
-            for(Event event : items){
+            for (Event event : items) {
 
                 // 시간 가져오기
                 DateTime start = event.getStart().getDateTime();
                 DateTime end = event.getEnd().getDateTime();
 
                 // 날짜만 존재할 경우
-                if(start == null){
+                if (start == null) {
                     start = event.getStart().getDate();
                 }
-                if(end ==  null){
+                if (end == null) {
                     end = event.getEnd().getDate();
                 }
-
 
                 // 시간 변환
                 LocalDateTime startLocal = toLocalDateTime(start);
                 LocalDateTime endLocal = toLocalDateTime(end);
-
 
                 // 부분 업데이트
                 eventRepository.findByGoogleEventId(event.getId())
@@ -135,8 +131,7 @@ public class EventService {
                                             .build();
                                     eventRepository.save(newEvent);
 
-                                }
-                        );
+                                });
 
                 // 확인용
                 System.out.printf("%s (%s)\n", event.getSummary(), start);
@@ -145,9 +140,6 @@ public class EventService {
 
         }
 
-
-
     }
-
 
 }
