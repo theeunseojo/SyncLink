@@ -8,15 +8,14 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Room {
-    @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String roomUUID;
@@ -27,7 +26,7 @@ public class Room {
     private LocalDateTime endTime;
 
     @Builder
-    public Room(String roomUUID, String title, LocalDateTime startTime, LocalDateTime endTime){
+    public Room(String roomUUID, String title, LocalDateTime startTime, LocalDateTime endTime) {
         this.roomUUID = roomUUID;
         this.title = title;
         this.startTime = startTime;
