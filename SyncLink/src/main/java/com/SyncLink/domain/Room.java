@@ -1,5 +1,6 @@
 package com.SyncLink.domain;
 
+import com.SyncLink.enums.roomMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,6 +25,12 @@ public class Room {
     // 범위
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+
+    private roomMode mode; // DATE_TIME / DATE_ONLY
+    private Long hostId; // 방장 ID
+
+    private LocalDateTime confirmedStart; // 확정된 시작 시간 (nullable)
+    private LocalDateTime confirmedEnd; // 확정된 종료 시간 (nullable)
 
     @Builder
     public Room(String roomUUID, String title, LocalDateTime startTime, LocalDateTime endTime) {
