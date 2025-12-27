@@ -36,12 +36,12 @@ public class RoomService {
                 roomRepository.save(room);
 
                 // 방장을 RoomMember로 등록
-                Member bangjang = memberRepository.findById(memberId)
+                Member host = memberRepository.findById(memberId)
                                 .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
                 RoomMember roomMember = RoomMember.builder()
                                 .room(room)
-                                .member(bangjang)
+                                .member(host)
                                 .isHost(true) // 방장 표시
                                 .build();
 

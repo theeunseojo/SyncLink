@@ -101,6 +101,7 @@ public class ScheduleService {
         // 정렬
         points.sort(Point.comparator());
 
+
         int count = 0;
         LocalDateTime lastFreeStart = rangeStart;
         System.out.println(lastFreeStart);

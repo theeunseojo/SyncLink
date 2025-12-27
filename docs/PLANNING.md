@@ -210,20 +210,43 @@
 
 ### 🔴 Phase 1: 버그 수정 (진행중)
 1. ~~GlobalExceptionHandler 버그~~ ✅
-2. 엔티티 재설계 (1인 다방)
+2. ~~엔티티 재설계 (1인 다방)~~ ✅
+3. ~~기본키 전략 변경~~ ✅
 
 ### 🟠 Phase 2: 핵심 기능 완성
-3. 히트맵 시각화
-4. 시간대 설정 기능
+1. 히트맵 시각화
+2. 시간대 설정 기능
 
 ### 🟡 Phase 3: 투표 기능
-5. Vote 엔티티 및 API
-6. 방장 확정 기능
+1. Vote 엔티티 및 API
+2. 방장 확정 기능
+
+#### 가능시간대 API 응답 스펙
+```json
+{
+  "slots": [
+    {
+      "start": "2024-01-15T14:00:00",
+      "end": "2024-01-15T16:00:00",
+      "durationMinutes": 120,
+      "availableMembers": [
+        { "id": 1, "name": "홍길동" },
+        { "id": null, "name": "게스트1" }
+      ],
+      "availableCount": 2,
+      "totalMembers": 3,
+      "votes": 3
+    }
+  ],
+  "totalMembers": 3
+}
+```
+- `votes`: 해당 시간대에 대한 투표수
 
 ### 🟢 Phase 4: 부가 기능
-7. 게스트 모드
-8. 결과 공유 (텍스트 복사)
-9. 구글 캘린더 추가 (write scope)
+1. 게스트 모드
+2. 결과 공유 (텍스트 복사)
+3. 구글 캘린더 추가 (write scope)
 
 ---
 
