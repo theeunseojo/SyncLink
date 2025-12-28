@@ -3,7 +3,6 @@ package com.SyncLink.adapter;
 import com.SyncLink.domain.Event;
 import com.SyncLink.domain.Member;
 import com.SyncLink.enums.ServiceType;
-import com.SyncLink.infrastructure.MemberRepository;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -11,7 +10,6 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Events;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;

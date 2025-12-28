@@ -1,5 +1,6 @@
 package com.SyncLink.domain;
 
+import com.SyncLink.enums.ServiceType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,12 +17,16 @@ public class Member {
     @Lob
     private String token;
 
+    @Enumerated(EnumType.STRING)
+    private ServiceType serviceType;
+
     // 생성자
     @Builder
-    public Member(String email, String name, String token) {
+    public Member(String email, String name, String token, ServiceType serviceType) {
         this.email = email;
         this.name = name;
         this.token = token;
+        this.serviceType = serviceType;
     }
 
     // 토큰 갱신

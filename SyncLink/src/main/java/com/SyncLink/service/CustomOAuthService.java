@@ -2,6 +2,7 @@ package com.SyncLink.service;
 
 import com.SyncLink.domain.Member;
 import com.SyncLink.domain.Room;
+import com.SyncLink.enums.ServiceType;
 import com.SyncLink.infrastructure.MemberRepository;
 import com.SyncLink.infrastructure.RoomRepository;
 import jakarta.servlet.http.HttpSession;
@@ -27,6 +28,10 @@ public class CustomOAuthService extends DefaultOAuth2UserService {
         String name = auth2User.getAttribute("name");
         String accessToken = req.getAccessToken().getTokenValue();
 
+        // OAuth Provider에서 ServiceType 결정
+        String registrationId = req.getClientRegistration().getRegistrationId();
+        ServiceType serviceType = determineServiceType(registrationId);
+
         // 세션에서 redirectUuid 꺼내기
         Object uuidObj = session.getAttribute("redirectUuid");
         String redirectUuid = (uuidObj != null) ? uuidObj.toString() : null;
@@ -38,6 +43,7 @@ public class CustomOAuthService extends DefaultOAuth2UserService {
                         .email(email)
                         .name(name)
                         .token(accessToken)
+                        .serviceType(serviceType)
                         .build());
 
         memberRepository.save(member);
@@ -53,5 +59,15 @@ public class CustomOAuthService extends DefaultOAuth2UserService {
         System.out.println("멤버 저장완료: " + name);
 
         return auth2User;
+    }
+
+    // registrationId → ServiceType 변환
+    private ServiceType determineServiceType(String registrationId) {
+        return switch (registrationId.toLowerCase()) {
+            case "google" -> ServiceType.GOOGLE;
+            case "naver" -> ServiceType.NAVER;
+            case "apple" -> ServiceType.APPLE;
+            default -> ServiceType.NONE;
+        };
     }
 }
