@@ -5,6 +5,7 @@ import com.SyncLink.adapter.CalendarAdapterFactory;
 import com.SyncLink.domain.Event;
 import com.SyncLink.domain.Member;
 import com.SyncLink.enums.ServiceType;
+import com.SyncLink.infrastructure.EventRepository;
 import com.SyncLink.infrastructure.MemberRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -18,6 +19,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class EventService {
+    private final EventRepository eventRepository;
     private final MemberRepository memberRepository;
     private final CalendarAdapterFactory calendarAdapterFactory;
 
@@ -36,7 +38,7 @@ public class EventService {
         List<Event> events = adapter.fetchEvents(member, LocalDateTime.now(), LocalDateTime.now().plusMonths(3));
 
         // 저장하기
-
+        eventRepository.saveAll(events);
     }
 
 }

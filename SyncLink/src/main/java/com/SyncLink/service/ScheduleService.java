@@ -4,6 +4,8 @@ import com.SyncLink.domain.Event;
 import com.SyncLink.domain.IgnoredEvent;
 import com.SyncLink.domain.Member;
 import com.SyncLink.domain.Room;
+import com.SyncLink.domain.RoomMember;
+import com.SyncLink.enums.memberType;
 import com.SyncLink.infrastructure.EventRepository;
 import com.SyncLink.infrastructure.IgnoredEventRepository;
 import com.SyncLink.infrastructure.MemberRepository;
@@ -11,6 +13,8 @@ import com.SyncLink.infrastructure.RoomMemberRepository;
 import com.SyncLink.infrastructure.RoomRepository;
 import com.SyncLink.presentation.EventResponseDto;
 import com.SyncLink.presentation.TimeSlotDto;
+import com.SyncLink.presentation.memberDto;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,17 +68,55 @@ public class ScheduleService {
             // 필터링
             // eventId만 따로 뽑기
             List<String> ignoredIds = ignoredList.stream()
-                    .map(igEvent -> igEvent.getGoogleEventId())
+                    .map(igEvent -> igEvent.getExternalEventId())
                     .toList();
 
             for (Event event : allEvents) {
-                if (!ignoredIds.contains(event.getGoogleEventId())) {
+                if (!ignoredIds.contains(event.getExternalId())) {
                     validEvents.add(event);
                 }
             }
         }
 
         return validEvents;
+    }
+
+    // 특정 멤버의 유효한 일정만 가져오기
+    private List<Event> getValidEventsForMember(Room room, Member member) {
+        List<Event> allEvents = eventRepository.findAllByMember(member);
+        List<String> ignoredIds = ignoredEventRepository.findByRoomAndMember(room, member)
+                .stream()
+                .map(IgnoredEvent::getExternalEventId)
+                .toList();
+
+        return allEvents.stream()
+                .filter(event -> !ignoredIds.contains(event.getExternalId()))
+                .toList();
+    }
+
+    // 한 슬롯에 누가 가능한지 계산
+    private List<memberDto> findAvailableMembers(LocalDateTime slotStart, LocalDateTime slotEnd, Room room) {
+        List<memberDto> available = new ArrayList<>();
+
+        // 방의 모든 멤버 순회
+        for (RoomMember rm : roomMemberRepository.findAllByRoom(room)) {
+            Member member = rm.getMember();
+            List<Event> events = getValidEventsForMember(room, member);
+
+            // 겹치는 일정 있는지 체크
+            boolean hasConflict = events.stream()
+                    .anyMatch(e -> e.getStartTime().isBefore(slotEnd) && e.getEndTime().isAfter(slotStart));
+
+            if (!hasConflict) {
+                // Member에서 serviceType 가져와서 memberType으로 변환
+                memberType type = member.getServiceType() != null
+                        ? memberType.valueOf(member.getServiceType().name())
+                        : memberType.GUEST;
+                available.add(new memberDto(member.getId(), member.getName(), type));
+            }
+        }
+
+        return available;
     }
 
     // 이벤트 리스트를 point리스트로 변환하는 함수
@@ -94,13 +136,13 @@ public class ScheduleService {
      * - events : 구글 캘린더로 받아온 일정들
      * - rangeStart, rangeEnd : 방장이 설정한 범위 (시작시간, 종료시간)
      */
+
     private List<TimeSlotDto> findFreeTimes(List<Event> events, LocalDateTime rangeStart, LocalDateTime rangeEnd) {
         List<TimeSlotDto> freeTimes = new ArrayList<>();
         // 이벤트 -> point로 쪼개기
         List<Point> points = splitEventByPoint(events);
         // 정렬
         points.sort(Point.comparator());
-
 
         int count = 0;
         LocalDateTime lastFreeStart = rangeStart;
@@ -142,7 +184,7 @@ public class ScheduleService {
         return freeTimes;
     }
 
-    // 방 찾아서 멤버들의 일정을 찾아서 빈시간 계산
+    // 방 찾아서 멤버들의 일정을 찾아서 빈시간 계산 + 멤버 정보 포함
     @Transactional(readOnly = true)
     public List<TimeSlotDto> getFreeTimesByRoom(String uuid, String sort) {
 
@@ -151,11 +193,13 @@ public class ScheduleService {
                 .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다."));
 
         List<Event> validEvents = getValidEvents(room);
-        List<TimeSlotDto> results = findFreeTimes(validEvents, room.getStartTime(), room.getEndTime());
+        List<TimeSlotDto> basicSlots = findFreeTimes(validEvents, room.getStartTime(), room.getEndTime());
 
-        // 내림차순
-        if (sort.equals("LONGEST")) {
-            results.sort((a, b) -> Long.compare(b.getDurationMin(), a.getDurationMin()));
+        // 각 슬롯에 가능 멤버 정보 추가
+        List<TimeSlotDto> results = new ArrayList<>();
+        for (TimeSlotDto slot : basicSlots) {
+            List<memberDto> availableMembers = findAvailableMembers(slot.start(), slot.end(), room);
+            results.add(new TimeSlotDto(slot.start(), slot.end(), availableMembers, 0));
         }
 
         return results;
@@ -163,17 +207,17 @@ public class ScheduleService {
 
     // 일정 수정
     @Transactional
-    public void toggleIgnoreEvent(String roomUuid, Long memberId, String googleEventId) {
+    public void toggleIgnoreEvent(String roomUuid, Long memberId, String externalEventId) {
         Room room = roomRepository.findByRoomUUID(roomUuid)
-                .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다ㅏ."));
+                .orElseThrow(() -> new EntityNotFoundException("방을 찾을 수 없습니다."));
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("멤버를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("멤버를 찾을 수 없습니다."));
 
         // 이벤트 존재시 삭제, 없으면 다시 복구
-        ignoredEventRepository.findByRoomAndMemberAndGoogleEventId(room, member, googleEventId)
+        ignoredEventRepository.findByRoomAndMemberAndExternalEventId(room, member, externalEventId)
                 .ifPresentOrElse(
                         existing -> ignoredEventRepository.delete(existing),
-                        () -> ignoredEventRepository.save(new IgnoredEvent(room, member, googleEventId)));
+                        () -> ignoredEventRepository.save(new IgnoredEvent(room, member, externalEventId)));
 
     }
 
@@ -229,12 +273,12 @@ public class ScheduleService {
         List<Event> allEvents = eventRepository.findAllByMember(member);
         List<String> ignoredIds = ignoredEventRepository.findByRoomAndMember(room, member)
                 .stream()
-                .map(igEvent -> igEvent.getGoogleEventId())
+                .map(igEvent -> igEvent.getExternalEventId())
                 .toList();
 
         return allEvents.stream()
-                .map(event -> EventResponseDto.from(event, ignoredIds.contains(event.getGoogleEventId()) // true -> 무시된
-                                                                                                         // 상태
+                .map(event -> EventResponseDto.from(event, ignoredIds.contains(event.getExternalId()) // true -> 무시된
+                                                                                                      // 상태
                 ))
                 .toList();
     }
