@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -42,17 +44,43 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             System.out.println("일정 동기화 실패: " + e.getMessage());
         }
 
-        // 리다이렉트 로직
-        Object redirectUuidObj = session.getAttribute("redirectUuid");
+        // 리다이렉트 결정
+        String redirectUrl = determineRedirectUrl(request, session);
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+    }
 
-        // 방 정보 존재시 방으로 리다이렉트
+    private String determineRedirectUrl(HttpServletRequest request, HttpSession session) {
+        // 1. 세션에 저장된 redirectUuid 확인
+        Object redirectUuidObj = session.getAttribute("redirectUuid");
         if (redirectUuidObj != null) {
             String redirectUuid = redirectUuidObj.toString();
             session.removeAttribute("redirectUuid");
-            getRedirectStrategy().sendRedirect(request, response, "/room.html?uuid=" + redirectUuid + "&login=success");
-        } else {
-            // 방 정보 존재 X -> 메인페이지
-            getRedirectStrategy().sendRedirect(request, response, "/index.html?login=success");
+            return "/room.html?uuid=" + redirectUuid + "&login=success";
         }
+
+        // 2. SavedRequest 확인 (Spring Security가 저장한 원래 요청)
+        HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
+        SavedRequest savedRequest = requestCache.getRequest(request, null);
+        if (savedRequest != null) {
+            String targetUrl = savedRequest.getRedirectUrl();
+            if (targetUrl != null && targetUrl.contains("room.html")) {
+                return targetUrl + (targetUrl.contains("?") ? "&" : "?") + "login=success";
+            }
+        }
+
+        // 3. Referer 헤더 확인
+        String referer = request.getHeader("Referer");
+        if (referer != null && referer.contains("room.html")) {
+            // room.html?uuid=xxx 형식에서 uuid 추출
+            if (referer.contains("uuid=")) {
+                int start = referer.indexOf("uuid=") + 5;
+                int end = referer.indexOf("&", start);
+                String uuid = end > 0 ? referer.substring(start, end) : referer.substring(start);
+                return "/room.html?uuid=" + uuid + "&login=success";
+            }
+        }
+
+        // 4. 기본값: 메인 페이지
+        return "/index.html?login=success";
     }
 }
