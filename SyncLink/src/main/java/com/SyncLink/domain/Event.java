@@ -14,7 +14,7 @@ public class Event {
     private Long id;
 
     @Column(unique = true)
-    private String googleEventId;
+    private String externalId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
@@ -24,12 +24,12 @@ public class Event {
     private LocalDateTime endTime;
 
     @Builder
-    public Event(Member member, String title, LocalDateTime startTime, LocalDateTime endTime, String googleEventId) {
+    public Event(Member member, String title, LocalDateTime startTime, LocalDateTime endTime, String externalId) {
         this.member = member;
         this.title = title;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.googleEventId= googleEventId;
+        this.externalId= externalId;
     }
 
 }
