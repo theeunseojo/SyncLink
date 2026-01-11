@@ -5,255 +5,226 @@ import com.SyncLink.domain.IgnoredEvent;
 import com.SyncLink.domain.Member;
 import com.SyncLink.domain.Room;
 import com.SyncLink.domain.RoomMember;
-import com.SyncLink.enums.memberType;
+import com.SyncLink.domain.TimePoint;
+import com.SyncLink.enums.MemberType;
 import com.SyncLink.infrastructure.EventRepository;
 import com.SyncLink.infrastructure.IgnoredEventRepository;
 import com.SyncLink.infrastructure.MemberRepository;
 import com.SyncLink.infrastructure.RoomMemberRepository;
 import com.SyncLink.infrastructure.RoomRepository;
 import com.SyncLink.presentation.EventResponseDto;
+import com.SyncLink.presentation.MemberDto;
 import com.SyncLink.presentation.TimeSlotDto;
-import com.SyncLink.presentation.memberDto;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+/**
+ * 일정 관련 비즈니스 로직을 담당하는 서비스.
+ * 빈 시간 계산, 일정 무시 토글, 멤버별 일정 조회 등을 처리합니다.
+ */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
+
     private final EventRepository eventRepository;
     private final RoomRepository roomRepository;
     private final MemberRepository memberRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final IgnoredEventRepository ignoredEventRepository;
 
-    // 시작점과 종료지점을 기록할 수 있는 Point 클래스
-    private static class Point {
-        LocalDateTime time;
-        int type; // 시작 +1, 종료 -1
+    // ==================== 공개 API ====================
 
-        public Point(LocalDateTime time, int type) {
-            this.time = time;
-            this.type = type;
-        }
+    /**
+     * 특정 방의 빈 시간대를 조회합니다.
+     * 각 시간대에 참여 가능한 멤버 정보도 함께 반환합니다.
+     */
+    @Transactional(readOnly = true)
+    public List<TimeSlotDto> getFreeTimesByRoom(String uuid, String sort) {
+        Room room = findRoomByUuid(uuid);
+        List<Event> validEvents = getValidEvents(room);
+        List<TimeSlotDto> basicSlots = findFreeTimes(validEvents, room.getStartTime(), room.getEndTime());
 
-        // 시간순으로 정렬하되, 같은 시간일 경우 시작지점이 먼저오게끔
-        public static Comparator<Point> comparator() {
-            return Comparator
-                    .comparing((Point p) -> p.time)
-                    .thenComparing(p -> p.type, Comparator.reverseOrder());
-        }
+        return enrichSlotsWithMembers(basicSlots, room);
     }
 
-    // 무시하기로 한 일정을 제외하고 유효한 일정만 가져오기
-    private List<Event> getValidEvents(Room room) {
-        // RoomMember를 통해 방의 참여자들 조회
-        List<Member> members = roomMemberRepository.findAllByRoom(room)
-                .stream()
-                .map(rm -> rm.getMember())
+    /**
+     * 특정 방에서 완전히 비어있는 날짜 목록을 조회합니다.
+     */
+    @Transactional(readOnly = true)
+    public List<LocalDate> findFreeDates(String roomUuid) {
+        Room room = findRoomByUuid(roomUuid);
+        List<Event> events = getValidEvents(room);
+
+        return findFreeDatesInRange(room, events);
+    }
+
+    /**
+     * 특정 일정의 무시 상태를 토글합니다.
+     * 무시 상태면 해제하고, 해제 상태면 무시 처리합니다.
+     */
+    @Transactional
+    public void toggleIgnoreEvent(String roomUuid, Long memberId, String externalEventId) {
+        Room room = findRoomByUuid(roomUuid);
+        Member member = findMemberById(memberId);
+
+        ignoredEventRepository.findByRoomAndMemberAndExternalEventId(room, member, externalEventId)
+                .ifPresentOrElse(
+                        ignoredEventRepository::delete,
+                        () -> ignoredEventRepository.save(new IgnoredEvent(room, member, externalEventId)));
+    }
+
+    /**
+     * 특정 멤버의 모든 일정과 무시 상태를 함께 조회합니다.
+     */
+    @Transactional(readOnly = true)
+    public List<EventResponseDto> getMemberEventsWithState(String uuid, Long memberId) {
+        Room room = findRoomByUuid(uuid);
+        Member member = findMemberById(memberId);
+
+        List<Event> allEvents = eventRepository.findAllByMember(member);
+        Set<String> ignoredIds = getIgnoredEventIds(room, member);
+
+        return allEvents.stream()
+                .map(event -> EventResponseDto.from(event, ignoredIds.contains(event.getExternalId())))
                 .toList();
-        List<Event> validEvents = new ArrayList<>();
-
-        for (Member member : members) {
-            List<Event> allEvents = eventRepository.findAllByMember(member);
-            List<IgnoredEvent> ignoredList = ignoredEventRepository.findByRoomAndMember(room, member);
-
-            // 필터링
-            // eventId만 따로 뽑기
-            List<String> ignoredIds = ignoredList.stream()
-                    .map(igEvent -> igEvent.getExternalEventId())
-                    .toList();
-
-            for (Event event : allEvents) {
-                if (!ignoredIds.contains(event.getExternalId())) {
-                    validEvents.add(event);
-                }
-            }
-        }
-
-        return validEvents;
     }
 
-    // 특정 멤버의 유효한 일정만 가져오기
+    // ==================== 조회 헬퍼 메서드 ====================
+
+    private Room findRoomByUuid(String uuid) {
+        return roomRepository.findByRoomUUID(uuid)
+                .orElseThrow(() -> new EntityNotFoundException("방을 찾을 수 없습니다: " + uuid));
+    }
+
+    private Member findMemberById(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("멤버를 찾을 수 없습니다: " + memberId));
+    }
+
+    // ==================== 이벤트 필터링 ====================
+
+    /**
+     * 방의 모든 멤버들의 유효한(무시되지 않은) 일정을 조회합니다.
+     */
+    private List<Event> getValidEvents(Room room) {
+        List<RoomMember> roomMembers = roomMemberRepository.findAllByRoom(room);
+
+        return roomMembers.stream()
+                .flatMap(rm -> getValidEventsForMember(room, rm.getMember()).stream())
+                .toList();
+    }
+
+    /**
+     * 특정 멤버의 유효한 일정만 필터링합니다.
+     */
     private List<Event> getValidEventsForMember(Room room, Member member) {
         List<Event> allEvents = eventRepository.findAllByMember(member);
-        List<String> ignoredIds = ignoredEventRepository.findByRoomAndMember(room, member)
-                .stream()
-                .map(IgnoredEvent::getExternalEventId)
-                .toList();
+        Set<String> ignoredIds = getIgnoredEventIds(room, member);
 
         return allEvents.stream()
                 .filter(event -> !ignoredIds.contains(event.getExternalId()))
                 .toList();
     }
 
-    // 한 슬롯에 누가 가능한지 계산
-    private List<memberDto> findAvailableMembers(LocalDateTime slotStart, LocalDateTime slotEnd, Room room) {
-        List<memberDto> available = new ArrayList<>();
+    /**
+     * 특정 방/멤버의 무시된 이벤트 ID 목록을 조회합니다.
+     */
+    private Set<String> getIgnoredEventIds(Room room, Member member) {
+        return ignoredEventRepository.findByRoomAndMember(room, member).stream()
+                .map(IgnoredEvent::getExternalEventId)
+                .collect(Collectors.toSet());
+    }
 
-        // 방의 모든 멤버 순회
-        for (RoomMember rm : roomMemberRepository.findAllByRoom(room)) {
-            Member member = rm.getMember();
-            List<Event> events = getValidEventsForMember(room, member);
+    // ==================== 빈 시간 계산 ====================
 
-            // 겹치는 일정 있는지 체크
-            boolean hasConflict = events.stream()
-                    .anyMatch(e -> e.getStartTime().isBefore(slotEnd) && e.getEndTime().isAfter(slotStart));
+    /**
+     * 일정 목록에서 빈 시간대를 찾습니다.
+     * 스위핑 알고리즘을 사용하여 효율적으로 계산합니다.
+     */
+    private List<TimeSlotDto> findFreeTimes(List<Event> events, LocalDateTime rangeStart, LocalDateTime rangeEnd) {
+        List<TimeSlotDto> freeTimes = new ArrayList<>();
+        List<TimePoint> points = convertEventsToTimePoints(events);
+        points.sort(TimePoint.comparator());
 
-            if (!hasConflict) {
-                // Member에서 serviceType 가져와서 memberType으로 변환
-                memberType type = member.getServiceType() != null
-                        ? memberType.valueOf(member.getServiceType().name())
-                        : memberType.GUEST;
-                available.add(new memberDto(member.getId(), member.getName(), type));
+        int activeEventCount = 0;
+        LocalDateTime freeStartTime = rangeStart;
+
+        for (TimePoint point : points) {
+            if (isFreeTimeEnding(activeEventCount, point)) {
+                addFreeSlotIfValid(freeTimes, freeStartTime, point.time(), rangeStart, rangeEnd);
+            }
+
+            activeEventCount += point.type();
+
+            if (isFreeTimeStarting(activeEventCount)) {
+                freeStartTime = point.time();
             }
         }
 
-        return available;
+        // 마지막 남은 빈 시간 처리
+        addFreeSlotIfValid(freeTimes, freeStartTime, rangeEnd, rangeStart, rangeEnd);
+
+        log.debug("빈 시간대 {} 개 발견", freeTimes.size());
+        return freeTimes;
     }
 
-    // 이벤트 리스트를 point리스트로 변환하는 함수
-    private List<Point> splitEventByPoint(List<Event> events) {
-        List<Point> points = new ArrayList<>();
+    /**
+     * 이벤트 목록을 TimePoint 목록으로 변환합니다.
+     */
+    private List<TimePoint> convertEventsToTimePoints(List<Event> events) {
+        List<TimePoint> points = new ArrayList<>();
         for (Event event : events) {
-            // 시작시간
-            points.add(new Point(event.getStartTime(), 1));
-            // 끝시간
-            points.add(new Point(event.getEndTime(), -1));
+            points.add(new TimePoint(event.getStartTime(), TimePoint.START));
+            points.add(new TimePoint(event.getEndTime(), TimePoint.END));
         }
         return points;
     }
 
-    /*
-     * 목적 : 일정들중에 빈시간을 찾는 알고리즘
-     * - events : 구글 캘린더로 받아온 일정들
-     * - rangeStart, rangeEnd : 방장이 설정한 범위 (시작시간, 종료시간)
+    private boolean isFreeTimeEnding(int activeCount, TimePoint point) {
+        return activeCount == 0 && point.type() == TimePoint.START;
+    }
+
+    private boolean isFreeTimeStarting(int activeCount) {
+        return activeCount == 0;
+    }
+
+    /**
+     * 유효한 빈 시간대를 목록에 추가합니다.
      */
+    private void addFreeSlotIfValid(List<TimeSlotDto> slots, LocalDateTime start, LocalDateTime end,
+            LocalDateTime rangeStart, LocalDateTime rangeEnd) {
+        LocalDateTime validStart = start.isBefore(rangeStart) ? rangeStart : start;
+        LocalDateTime validEnd = end.isAfter(rangeEnd) ? rangeEnd : end;
 
-    private List<TimeSlotDto> findFreeTimes(List<Event> events, LocalDateTime rangeStart, LocalDateTime rangeEnd) {
-        List<TimeSlotDto> freeTimes = new ArrayList<>();
-        // 이벤트 -> point로 쪼개기
-        List<Point> points = splitEventByPoint(events);
-        // 정렬
-        points.sort(Point.comparator());
-
-        int count = 0;
-        LocalDateTime lastFreeStart = rangeStart;
-        System.out.println(lastFreeStart);
-        for (Point point : points) {
-            // 빈시간이 끝났으면
-            // 그 이전까지의 빈시간을 기록
-            if (count == 0 && point.type == 1) {
-                // 빈시간이 시작시간이 방장 범위 설정 시작 시간(= 앞서있으면 시작시간은 rangeStart
-                // 끝시간이 방정 범위 설정 종료 시간보다 뒤에 있으면 끝 시간은 rangeEnd
-                LocalDateTime validStart = lastFreeStart.isBefore(rangeStart) ? rangeStart : lastFreeStart;
-                LocalDateTime validEnd = point.time.isAfter(rangeEnd) ? rangeEnd : point.time;
-
-                // 시작시간 = 종료시간이 같은지 체크
-                if (validStart.isBefore(validEnd)) {
-                    freeTimes.add(new TimeSlotDto(validStart, validEnd));
-                }
-
-            }
-            // 카운팅
-            // 시작시간이면 +1
-            // 종료시간이면 -1
-            count += point.type;
-
-            // 빈시간이 시작되면 이전의 종료시간을 기록
-            if (count == 0) {
-                lastFreeStart = point.time;
-            }
+        if (validStart.isBefore(validEnd)) {
+            slots.add(new TimeSlotDto(validStart, validEnd));
         }
-        // 개인 일정 순회 했음에도 불구하고 남은시간은 빈시간으로 기록
-        if (lastFreeStart.isBefore(rangeEnd)) {
-            LocalDateTime validStart = lastFreeStart.isBefore(rangeStart) ? rangeStart : lastFreeStart;
-            if (validStart.isBefore(rangeEnd)) {
-                freeTimes.add(new TimeSlotDto(validStart, rangeEnd));
-            }
-        }
-
-        System.out.println("빈 일정의 갯수는 : " + freeTimes.size());
-        return freeTimes;
     }
 
-    // 방 찾아서 멤버들의 일정을 찾아서 빈시간 계산 + 멤버 정보 포함
-    @Transactional(readOnly = true)
-    public List<TimeSlotDto> getFreeTimesByRoom(String uuid, String sort) {
+    // ==================== 빈 날짜 계산 ====================
 
-        // 방 찾기
-        Room room = roomRepository.findByRoomUUID(uuid)
-                .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다."));
-
-        List<Event> validEvents = getValidEvents(room);
-        List<TimeSlotDto> basicSlots = findFreeTimes(validEvents, room.getStartTime(), room.getEndTime());
-
-        // 각 슬롯에 가능 멤버 정보 추가
-        List<TimeSlotDto> results = new ArrayList<>();
-        for (TimeSlotDto slot : basicSlots) {
-            List<memberDto> availableMembers = findAvailableMembers(slot.start(), slot.end(), room);
-            results.add(new TimeSlotDto(slot.start(), slot.end(), availableMembers, 0));
-        }
-
-        return results;
-    }
-
-    // 일정 수정
-    @Transactional
-    public void toggleIgnoreEvent(String roomUuid, Long memberId, String externalEventId) {
-        Room room = roomRepository.findByRoomUUID(roomUuid)
-                .orElseThrow(() -> new EntityNotFoundException("방을 찾을 수 없습니다."));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException("멤버를 찾을 수 없습니다."));
-
-        // 이벤트 존재시 삭제, 없으면 다시 복구
-        ignoredEventRepository.findByRoomAndMemberAndExternalEventId(room, member, externalEventId)
-                .ifPresentOrElse(
-                        existing -> ignoredEventRepository.delete(existing),
-                        () -> ignoredEventRepository.save(new IgnoredEvent(room, member, externalEventId)));
-
-    }
-
-    // 날짜로만 찾기
-    @Transactional(readOnly = true)
-    public List<LocalDate> findFreeDates(String roomUuid) {
-        Room room = roomRepository.findByRoomUUID(roomUuid)
-                .orElseThrow(() -> new IllegalArgumentException("방이 존재하지 않는다."));
-
-        // 필터링된 이벤트 가져오기
-        List<Event> events = getValidEvents(room);
-
+    /**
+     * 방의 범위 내에서 완전히 비어있는 날짜를 찾습니다.
+     */
+    private List<LocalDate> findFreeDatesInRange(Room room, List<Event> events) {
         List<LocalDate> freeDates = new ArrayList<>();
 
         LocalDate current = room.getStartTime().toLocalDate();
         LocalDate end = room.getEndTime().toLocalDate();
 
-        // 방의 시작일부터 종료일까지 하루씩 체크하기
         while (!current.isAfter(end)) {
-            // 00:00으로 바꿔주기
-            LocalDateTime dayStart = current.atStartOfDay();
-            LocalDateTime dayEnd = current.plusDays(1).atStartOfDay();
-
-            boolean isBusy = false;
-
-            for (Event event : events) {
-                // 일정이 겹치는지 계산
-                // 일정시작 < 오늘 끝 && 일정 끝 > 오늘 시작
-                if (event.getStartTime().isBefore(dayEnd) && event.getEndTime().isAfter(dayStart)) {
-                    isBusy = true;
-                    break;
-                }
-            }
-
-            // 겹치는게 하나도 없으면 추가
-            if (!isBusy) {
+            if (!hasEventConflictOnDate(events, current)) {
                 freeDates.add(current);
             }
             current = current.plusDays(1);
@@ -262,25 +233,79 @@ public class ScheduleService {
         return freeDates;
     }
 
-    // 내 일정 목록과 함께 무시상태 조회
-    @Transactional(readOnly = true)
-    public List<EventResponseDto> getMemberEventsWithState(String uuid, Long memberId) {
-        Room room = roomRepository.findByRoomUUID(uuid)
-                .orElseThrow(() -> new IllegalArgumentException("방이 존재하지 않습니다."));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("멤버가 존재하지 않습니다."));
+    /**
+     * 특정 날짜에 일정 충돌이 있는지 확인합니다.
+     */
+    private boolean hasEventConflictOnDate(List<Event> events, LocalDate date) {
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
 
-        List<Event> allEvents = eventRepository.findAllByMember(member);
-        List<String> ignoredIds = ignoredEventRepository.findByRoomAndMember(room, member)
-                .stream()
-                .map(igEvent -> igEvent.getExternalEventId())
-                .toList();
+        return events.stream()
+                .anyMatch(event -> isTimeRangeOverlapping(
+                        event.getStartTime(), event.getEndTime(),
+                        dayStart, dayEnd));
+    }
 
-        return allEvents.stream()
-                .map(event -> EventResponseDto.from(event, ignoredIds.contains(event.getExternalId()) // true -> 무시된
-                                                                                                      // 상태
-                ))
+    /**
+     * 두 시간 범위가 겹치는지 확인합니다.
+     */
+    private boolean isTimeRangeOverlapping(LocalDateTime start1, LocalDateTime end1,
+            LocalDateTime start2, LocalDateTime end2) {
+        return start1.isBefore(end2) && end1.isAfter(start2);
+    }
+
+    // ==================== 멤버 가용성 계산 ====================
+
+    /**
+     * 각 빈 시간대에 참여 가능한 멤버 정보를 추가합니다.
+     */
+    private List<TimeSlotDto> enrichSlotsWithMembers(List<TimeSlotDto> slots, Room room) {
+        return slots.stream()
+                .map(slot -> new TimeSlotDto(
+                        slot.start(),
+                        slot.end(),
+                        findAvailableMembers(slot.start(), slot.end(), room),
+                        0))
                 .toList();
     }
 
+    /**
+     * 특정 시간대에 참여 가능한 멤버 목록을 조회합니다.
+     */
+    private List<MemberDto> findAvailableMembers(LocalDateTime slotStart, LocalDateTime slotEnd, Room room) {
+        List<MemberDto> availableMembers = new ArrayList<>();
+
+        for (RoomMember rm : roomMemberRepository.findAllByRoom(room)) {
+            Member member = rm.getMember();
+
+            if (!hasMemberConflict(room, member, slotStart, slotEnd)) {
+                availableMembers.add(toMemberDto(member));
+            }
+        }
+
+        return availableMembers;
+    }
+
+    /**
+     * 멤버가 해당 시간대에 다른 일정이 있는지 확인합니다.
+     */
+    private boolean hasMemberConflict(Room room, Member member, LocalDateTime slotStart, LocalDateTime slotEnd) {
+        List<Event> events = getValidEventsForMember(room, member);
+
+        return events.stream()
+                .anyMatch(event -> isTimeRangeOverlapping(
+                        event.getStartTime(), event.getEndTime(),
+                        slotStart, slotEnd));
+    }
+
+    /**
+     * Member 엔티티를 MemberDto로 변환합니다.
+     */
+    private MemberDto toMemberDto(Member member) {
+        MemberType type = (member.getServiceType() != null)
+                ? MemberType.valueOf(member.getServiceType().name())
+                : MemberType.GUEST;
+
+        return new MemberDto(member.getId(), member.getName(), type);
+    }
 }

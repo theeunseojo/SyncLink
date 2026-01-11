@@ -1,7 +1,9 @@
 package com.SyncLink.domain;
 
-import com.SyncLink.enums.roomMode;
+import com.SyncLink.enums.RoomMode;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -9,12 +11,17 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
+/**
+ * 일정 조율을 위한 방 엔티티.
+ */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Room {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,15 +29,16 @@ public class Room {
     private String roomUUID;
     private String title;
 
-    // 범위
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    private roomMode mode; // DATE_TIME / DATE_ONLY
-    private Long hostId; // 방장 ID
+    @Enumerated(EnumType.STRING)
+    private RoomMode mode;
 
-    private LocalDateTime confirmedStart; // 확정된 시작 시간 (nullable)
-    private LocalDateTime confirmedEnd; // 확정된 종료 시간 (nullable)
+    private Long hostId;
+
+    private LocalDateTime confirmedStart;
+    private LocalDateTime confirmedEnd;
 
     @Builder
     public Room(String roomUUID, String title, LocalDateTime startTime, LocalDateTime endTime) {
@@ -39,5 +47,4 @@ public class Room {
         this.startTime = startTime;
         this.endTime = endTime;
     }
-
 }

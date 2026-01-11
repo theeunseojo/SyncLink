@@ -2,10 +2,10 @@ spring:
   application:
     name: SyncLink
   datasource:
-    url: jdbc:mysql://localhost:3306/synclinkdb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://database-1.ca5mqm6e0yj5.us-east-1.rds.amazonaws.com:3306/synclinkdb?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: 1234
+    username: admin
+    password: awkitymilk753!
   jpa:
     hibernate:
       ddl-auto: update
@@ -34,4 +34,3 @@ logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql: trace
-    org.hibernate.orm.jdbc.bind: trace

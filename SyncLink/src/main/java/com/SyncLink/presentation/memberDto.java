@@ -1,10 +1,12 @@
 package com.SyncLink.presentation;
 
-import com.SyncLink.enums.memberType;
+import com.SyncLink.enums.MemberType;
 
-public record memberDto(
+/**
+ * 멤버 정보를 담는 DTO.
+ */
+public record MemberDto(
         Long id,
         String name,
-        memberType type
-) {
+        MemberType type) {
 }
