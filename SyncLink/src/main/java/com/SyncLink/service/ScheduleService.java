@@ -203,7 +203,7 @@ public class ScheduleService {
      * 유효한 빈 시간대를 목록에 추가합니다.
      */
     private void addFreeSlotIfValid(List<TimeSlotDto> slots, LocalDateTime start, LocalDateTime end,
-            LocalDateTime rangeStart, LocalDateTime rangeEnd) {
+                                    LocalDateTime rangeStart, LocalDateTime rangeEnd) {
         LocalDateTime validStart = start.isBefore(rangeStart) ? rangeStart : start;
         LocalDateTime validEnd = end.isAfter(rangeEnd) ? rangeEnd : end;
 
@@ -250,7 +250,7 @@ public class ScheduleService {
      * 두 시간 범위가 겹치는지 확인합니다.
      */
     private boolean isTimeRangeOverlapping(LocalDateTime start1, LocalDateTime end1,
-            LocalDateTime start2, LocalDateTime end2) {
+                                           LocalDateTime start2, LocalDateTime end2) {
         return start1.isBefore(end2) && end1.isAfter(start2);
     }
 
