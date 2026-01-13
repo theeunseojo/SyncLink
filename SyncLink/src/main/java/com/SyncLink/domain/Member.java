@@ -1,42 +1,38 @@
 package com.SyncLink.domain;
 
+import com.SyncLink.enums.ServiceType;
 import jakarta.persistence.*;
 import lombok.*;
-
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
-    @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true, nullable = false)
-    private  String email;
-    private  String name;
+    @Column(unique = true)
+    private String email;
+    private String name;
     @Lob
     private String token;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id")
-    private Room room;
+    @Enumerated(EnumType.STRING)
+    private ServiceType serviceType;
 
     // 생성자
     @Builder
-    public Member(String email, String name , String token, Room room){
+    public Member(String email, String name, String token, ServiceType serviceType) {
         this.email = email;
         this.name = name;
         this.token = token;
-        this.room = room;
+        this.serviceType = serviceType;
     }
 
     // 토큰 갱신
-    public Member updateToken(String accessToken){
+    public Member updateToken(String accessToken) {
         this.token = accessToken;
         return this;
     }
 
-    public void setRoom(Room room){
-        this.room = room;
-    }
 }
-

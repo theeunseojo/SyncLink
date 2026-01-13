@@ -1,8 +1,15 @@
 package com.SyncLink.presentation;
 
+import com.SyncLink.enums.RoomMode;
 
 import java.time.LocalDateTime;
 
-public record RoomCreateRequest(String title,LocalDateTime startDateTime,
-      LocalDateTime endDateTime) {
+/**
+ * 방 생성 요청 DTO.
+ */
+public record RoomCreateRequest(
+                String title,
+                RoomMode mode,
+                LocalDateTime startDateTime,
+                LocalDateTime endDateTime) {
 }

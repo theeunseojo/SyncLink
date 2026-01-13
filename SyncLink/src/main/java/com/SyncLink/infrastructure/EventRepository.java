@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
-     void deleteByMember(Member member);
-     List<Event> findAllByMember(Member member);
-    Optional<Event> findByGoogleEventId(String googleEventId);
+    void deleteByMember(Member member);
+
+    List<Event> findAllByMember(Member member);
+
+    Optional<Event> findByExternalId(String externalId);
 }

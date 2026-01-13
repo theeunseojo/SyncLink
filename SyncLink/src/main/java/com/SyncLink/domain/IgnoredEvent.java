@@ -22,12 +22,12 @@ public class IgnoredEvent {
     private Member member;
 
 
-    private String googleEventId;
+    private String externalEventId;
 
 
-    public IgnoredEvent(Room room, Member member, String googleEventId) {
+    public IgnoredEvent(Room room, Member member, String externalEventId) {
         this.room = room;
         this.member = member;
-        this.googleEventId = googleEventId;
+        this.externalEventId = externalEventId;
     }
 }

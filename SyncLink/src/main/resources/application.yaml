@@ -2,21 +2,19 @@ spring:
   application:
     name: SyncLink
   datasource:
-    url: jdbc:h2:mem:synclinkdb
-    driver-class-name: org.h2.Driver
-    username: eun
-    password:
-  h2:
-    console:
-      enabled: true
+    url: jdbc:mysql://database-1.ca5mqm6e0yj5.us-east-1.rds.amazonaws.com:3306/synclinkdb?useSSL=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: admin
+    password: awkitymilk753!
   jpa:
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
-        ddl-auto: update
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-        highlight_sql: true
+        show_sql: true
         default_batch_fetch_size: 100
-    show-sql: true
 
   security:
     oauth2:
